@@ -3,6 +3,7 @@ package com.mkkl.canyonbot;
 import com.mkkl.canyonbot.command.BotCommand;
 import com.mkkl.canyonbot.command.CommandList;
 import com.mkkl.canyonbot.command.HelloCommand;
+import com.mkkl.canyonbot.plugin.PluginCommandLists;
 import discord4j.common.util.Snowflake;
 import discord4j.core.GatewayDiscordClient;
 import org.pf4j.RuntimeMode;
@@ -26,12 +27,20 @@ public class CanyonbotApplication {
 
 
         CanyonBot canyonBot = context.getBean(CanyonBot.class);
-        List<BotCommand> commands = new ArrayList<>();
-        commands.add(new HelloCommand());
+//        List<BotCommand> commands = new ArrayList<>();
+//        commands.add(new HelloCommand());
+
+
+        //PluginCommandLists commandLists = context.getBean(PluginCommandLists.class);
+        for(CommandList commandList : context.getBean(SpringPluginManager.class).getExtensions(CommandList.class)) {
+            if(commandList==null) continue;
+            canyonBot.getCommandRegistry().AddCommands(commandList);
+        }
         canyonBot.getCommandRegistry()
-                .AddCommands(canyonBot.getDiscordClient(), new CommandList("base", commands))
+                .GetGuildCommandRegistrar(canyonBot.getDiscordClient())
                 .registerCommands(Snowflake.of(1143642302435315732L))
                 .subscribe();
+
 
         SpringPluginManager pluginManager = context.getBean(SpringPluginManager.class);
         //pluginManager.startPlugins();

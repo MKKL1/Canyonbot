@@ -5,6 +5,7 @@ import com.mkkl.canyonbot.command.CommandRegistry;
 import discord4j.core.DiscordClient;
 import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
 
 @Service

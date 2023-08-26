@@ -13,5 +13,5 @@ public abstract class BotCommand {
         this.commandRequest = commandRequest;
     }
 
-    abstract Publisher<?> execute(ChatInputInteractionEvent event);
+    public abstract Publisher<?> execute(ChatInputInteractionEvent event);
 }

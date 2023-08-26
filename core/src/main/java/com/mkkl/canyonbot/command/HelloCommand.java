@@ -21,7 +21,7 @@ public class HelloCommand extends BotCommand{
     }
 
     @Override
-    Publisher<?> execute(ChatInputInteractionEvent event) {
+    public Publisher<?> execute(ChatInputInteractionEvent event) {
         return event.reply("hello " + event.getInteraction().getCommandInteraction().get().getOption("user").get().getValue().get().asUser().block().getTag());
     }
 }
