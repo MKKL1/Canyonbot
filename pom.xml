@@ -18,7 +18,6 @@
     <modules>
         <module>core</module>
         <module>plugins</module>
-        <module>bot-plugin-api</module>
     </modules>
 
 
