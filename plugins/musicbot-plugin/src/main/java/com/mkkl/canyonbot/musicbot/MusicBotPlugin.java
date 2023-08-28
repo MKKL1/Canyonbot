@@ -9,6 +9,7 @@ import discord4j.common.util.Snowflake;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class MusicBotPlugin extends BotPlugin {
 
@@ -18,14 +19,15 @@ public class MusicBotPlugin extends BotPlugin {
     }
 
     @Override
+    public Optional<List<BotCommand>> getCommands() {
+        List<BotCommand> botCommands = new ArrayList<>();
+        botCommands.add(new HelloCommand());
+        return Optional.of(botCommands);
+    }
+
+    @Override
     public void start() {
         super.start();
-        List<BotCommand> commandList = new ArrayList<>();
-        commandList.add(new HelloCommand());
-        appPluginContext.getCanyonBot().getCommandRegistry().AddCommands(
-                appPluginContext.getCanyonBot().getDiscordClient(),
-                new CommandList("musicbot-plugin", commandList))
-            .registerCommands(Snowflake.of(1143642302435315732L)).subscribe();
     }
 
     @Override

@@ -1,5 +1,7 @@
 package com.mkkl.canyonbot.command;
 
+import com.mkkl.canyonbot.command.registrar.CommandRegistrar;
+import com.mkkl.canyonbot.command.registrar.CommandRegistrarFactory;
 import discord4j.rest.RestClient;
 import discord4j.rest.interaction.GuildCommandRegistrar;
 import org.springframework.stereotype.Component;
@@ -11,8 +13,10 @@ public class CommandRegistry
 {
     private final List<CommandList> registeredCommands;
     private final HashMap<String, BotCommand> commandsByName;
+    private final CommandRegistrarFactory commandRegistrarFactory;
 
-    public CommandRegistry() {
+    public CommandRegistry(CommandRegistrarFactory commandRegistrarFactory) {
+        this.commandRegistrarFactory = commandRegistrarFactory;
         this.registeredCommands = new ArrayList<>();
         this.commandsByName = new HashMap<>();
     }
@@ -24,13 +28,13 @@ public class CommandRegistry
         }
     }
 
-    public GuildCommandRegistrar AddCommands(RestClient restClient, CommandList commandList) {
+    public CommandRegistrar AddCommandsWithRegistrar(CommandList commandList) {
         AddCommands(commandList);
-        return GuildCommandRegistrar.create(restClient, commandList.GetCommandRequests());
+        return commandRegistrarFactory.create(commandList.GetCommandRequests());
     }
 
-    public GuildCommandRegistrar GetGuildCommandRegistrar(RestClient restClient) {
-        return GuildCommandRegistrar.create(restClient, registeredCommands
+    public CommandRegistrar GetCommandRegistrar() {
+        return commandRegistrarFactory.create(registeredCommands
                 .stream()
                 .map(CommandList::GetCommandRequests)
                 .flatMap(Collection::stream)

@@ -1,5 +1,6 @@
 package com.mkkl.canyonbot;
 
+import com.mkkl.canyonbot.command.CommandRegistry;
 import com.mkkl.canyonbot.plugin.BotPluginManager;
 import discord4j.core.GatewayDiscordClient;
 import org.pf4j.RuntimeMode;
@@ -29,15 +30,15 @@ public class CanyonbotApplication {
 //            if(commandList==null) continue;
 //            canyonBot.getCommandRegistry().AddCommands(commandList);
 //        }
-//        canyonBot.getCommandRegistry()
-//                .GetGuildCommandRegistrar(canyonBot.getDiscordClient())
-//                .registerCommands(Snowflake.of(1143642302435315732L))
-//                .subscribe();
 
 
         BotPluginManager pluginManager = context.getBean(BotPluginManager.class);
         pluginManager.loadPlugins();
         pluginManager.startPlugins();
+
+        CommandRegistry commandRegistry = context.getBean(CommandRegistry.class);
+        commandRegistry.GetCommandRegistrar().registerCommands().subscribe();
+
         RuntimeMode runtimeMode = pluginManager.getRuntimeMode();
         if(runtimeMode == RuntimeMode.DEVELOPMENT) logger.info("Development mode");
 
