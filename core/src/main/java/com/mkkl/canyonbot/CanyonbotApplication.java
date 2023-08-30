@@ -3,6 +3,7 @@ package com.mkkl.canyonbot;
 import com.mkkl.canyonbot.command.CommandRegistry;
 import com.mkkl.canyonbot.plugin.BotPluginManager;
 import discord4j.core.GatewayDiscordClient;
+import discord4j.core.event.domain.interaction.MessageInteractionEvent;
 import org.pf4j.RuntimeMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,16 +22,6 @@ public class CanyonbotApplication {
 
 
         CanyonBot canyonBot = context.getBean(CanyonBot.class);
-//        List<BotCommand> commands = new ArrayList<>();
-//        commands.add(new HelloCommand());
-
-
-        //PluginCommandLists commandLists = context.getBean(PluginCommandLists.class);
-//        for(CommandList commandList : context.getBean(BotPluginManager.class).getExtensions(CommandList.class)) {
-//            if(commandList==null) continue;
-//            canyonBot.getCommandRegistry().AddCommands(commandList);
-//        }
-
 
         BotPluginManager pluginManager = context.getBean(BotPluginManager.class);
         pluginManager.loadPlugins();
@@ -41,7 +32,6 @@ public class CanyonbotApplication {
 
         RuntimeMode runtimeMode = pluginManager.getRuntimeMode();
         if(runtimeMode == RuntimeMode.DEVELOPMENT) logger.info("Development mode");
-
         canyonBot.getDiscordClient().withGateway(GatewayDiscordClient::onDisconnect).block();
     }
 

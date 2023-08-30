@@ -4,6 +4,7 @@ import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import lombok.Getter;
 import org.reactivestreams.Publisher;
+import reactor.core.publisher.Mono;
 
 public abstract class BotCommand {
     @Getter
@@ -13,5 +14,5 @@ public abstract class BotCommand {
         this.commandRequest = commandRequest;
     }
 
-    public abstract Publisher<?> execute(ChatInputInteractionEvent event);
+    public abstract Mono<Void> execute(ChatInputInteractionEvent event);
 }

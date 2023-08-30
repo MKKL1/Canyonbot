@@ -5,6 +5,9 @@ import lombok.Getter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+/**
+ * This class is used to pass the bot instance to the plugins.
+ */
 @Component
 public class AppPluginContext {
     @Getter

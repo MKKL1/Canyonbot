@@ -17,9 +17,9 @@ import org.springframework.stereotype.Component;
 @Configuration
 public class BotConfiguration {
 
-    @Value("${bot.commands.guildCommandsEnabled}")
+    @Value("${bot.commands.guildCommandsEnabled:false}")
     private boolean guildCommandsEnabled;
-    @Value("${bot.commands.guildId}")
+    @Value("${bot.commands.guildId:0}")
     private long guildId;
 
     private final RestClient restClient;
