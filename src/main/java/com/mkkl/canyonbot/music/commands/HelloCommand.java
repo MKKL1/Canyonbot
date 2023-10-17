@@ -1,4 +1,4 @@
-package com.mkkl.canyonbot.music;
+package com.mkkl.canyonbot.music.commands;
 
 import com.mkkl.canyonbot.commands.BotCommand;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
