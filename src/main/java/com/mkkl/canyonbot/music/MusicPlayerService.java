@@ -1,5 +1,7 @@
 package com.mkkl.canyonbot.music;
 
+import com.mkkl.canyonbot.music.player.LavaPlayer;
+import com.mkkl.canyonbot.music.player.MusicPlayer;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers;

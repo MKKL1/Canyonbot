@@ -75,7 +75,10 @@ public class PlayCommand extends BotCommand {
 
         @Override
         public void playlistLoaded(AudioPlaylist audioPlaylist) {
-            response = event.editReply("Loaded playlist " + audioPlaylist.getName());
+            response = event.editReply("Loaded playlist " + audioPlaylist.getTracks()
+                    .stream()
+                    .map(audioTrack -> audioTrack.getInfo().title)
+                    .reduce("", (s, s2) -> s + "\n" + s2));
         }
 
         @Override
