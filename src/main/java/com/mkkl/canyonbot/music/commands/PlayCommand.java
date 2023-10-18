@@ -14,13 +14,10 @@ import discord4j.core.object.command.ApplicationCommandOption;
 import discord4j.core.object.entity.Message;
 import discord4j.discordjson.json.ApplicationCommandOptionData;
 import discord4j.discordjson.json.ApplicationCommandRequest;
-import lombok.Getter;
-import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
 import java.util.concurrent.ExecutionException;
 
-@Component
 @RegisterCommand
 public class PlayCommand extends BotCommand {
     private final AudioPlayerManager audioPlayerManager;

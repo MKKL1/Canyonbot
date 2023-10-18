@@ -1,7 +1,6 @@
-package com.mkkl.canyonbot.music;
+package com.mkkl.canyonbot.music.player;
 
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
-import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 
 public class LavaPlayer implements MusicPlayer{
