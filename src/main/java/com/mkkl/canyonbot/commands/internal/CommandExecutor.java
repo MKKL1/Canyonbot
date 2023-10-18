@@ -32,8 +32,7 @@ public class CommandExecutor {
                 if (optionalCommand.isEmpty()) {
                     return event.reply("Command not found");//TODO localize
                 }
-                return optionalCommand.get()
-                        .execute(event);
+                return optionalCommand.get().execute(event);
             }
         }));
     }

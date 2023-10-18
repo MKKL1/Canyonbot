@@ -9,11 +9,17 @@ import org.springframework.stereotype.Service;
 @Service
 public class MusicPlayerService {
 
+    private AudioPlayerManager playerManager;
     @Bean
     public MusicPlayer musicPlayer() {
-        AudioPlayerManager playerManager = new DefaultAudioPlayerManager();
+        return new LavaPlayer(playerManager.createPlayer());
+    }
+
+    @Bean
+    public AudioPlayerManager audioPlayerManager() {
+        playerManager = new DefaultAudioPlayerManager();
         AudioSourceManagers.registerRemoteSources(playerManager);
         //playerManager.getConfiguration().setFrameBufferFactory(NonAllocatingAudioFrameBuffer::new);
-        return new LavaPlayer(playerManager.createPlayer());
+        return playerManager;
     }
 }
