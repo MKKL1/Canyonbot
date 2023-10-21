@@ -19,7 +19,7 @@ public class MusicPlayerService {
 
     @Bean
     public AudioPlayerManager audioPlayerManager() {
-        playerManager = new DefaultAudioPlayerManager();
+        playerManager = new DefaultAudioPlayerManager();//TODO remove search from this audio manager
         AudioSourceManagers.registerRemoteSources(playerManager);
         //playerManager.getConfiguration().setFrameBufferFactory(NonAllocatingAudioFrameBuffer::new);
         return playerManager;

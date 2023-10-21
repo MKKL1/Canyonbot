@@ -28,18 +28,22 @@ public class CommandRegistry {
 
     public void add(List<BotCommand> botCommands) {
         for (BotCommand command : botCommands) {
-            commandsByName.put(command.getCommandRequest().name(), command);
+            add(command);
         }
     }
 
     public void add(BotCommand... botCommands) {
         for (BotCommand command : botCommands) {
-            commandsByName.put(command.getCommandRequest().name(), command);
+            add(command);
         }
     }
 
     public void add(BotCommand botCommand) {
-        commandsByName.put(botCommand.getCommandRequest().name(), botCommand);
+        String commandName = botCommand.getCommandRequest().name();
+        if(commandsByName.containsKey(commandName)) {
+            throw new IllegalArgumentException("Command with name " + commandName + " already exists");
+        }
+        commandsByName.put(commandName, botCommand);
     }
 
     public CommandRegistrar getCommandRegistrar() {
