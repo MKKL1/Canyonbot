@@ -71,38 +71,4 @@ public class PlayCommand extends BotCommand {
                 })
                 .onErrorResume(throwable -> event.editReply("Error:" + throwable.getMessage()));
     }
-
-//    private static class ResultHandler implements AudioLoadResultHandler {
-//
-//        private Mono<Message> response;
-//        private final ChatInputInteractionEvent event;
-//
-//        public ResultHandler(ChatInputInteractionEvent event) {
-//            this.event = event;
-//        }
-//
-//        @Override
-//        public void trackLoaded(AudioTrack audioTrack) {
-//            response = event.editReply("Loaded " + audioTrack.getInfo().title);
-//            //Add to queue
-//        }
-//
-//        @Override
-//        public void playlistLoaded(AudioPlaylist audioPlaylist) {
-//            response = event.editReply("Loaded playlist " + audioPlaylist.getTracks()
-//                    .stream()
-//                    .map(audioTrack -> audioTrack.getInfo().title)
-//                    .reduce("", (s, s2) -> s + "\n" + s2));
-//        }
-//
-//        @Override
-//        public void noMatches() {
-//            response = event.editReply("No match found");
-//        }
-//
-//        @Override
-//        public void loadFailed(FriendlyException e) {
-//            response = event.editReply("Load failed: " + e.getMessage());
-//        }
-//    }
 }
