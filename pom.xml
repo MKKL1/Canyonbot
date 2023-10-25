@@ -78,10 +78,15 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-autoconfigure</artifactId>
         </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.github.topi314.lavasrc</groupId>-->
+<!--            <artifactId>lavasrc</artifactId>-->
+<!--            <version>4.0.0-beta.7</version>-->
+<!--        </dependency>-->
         <dependency>
-            <groupId>com.github.topi314.lavasrc</groupId>
-            <artifactId>lavasrc</artifactId>
-            <version>4.0.0-beta.7</version>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>32.1.3-jre</version>
         </dependency>
     </dependencies>
 

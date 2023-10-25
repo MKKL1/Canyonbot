@@ -7,14 +7,20 @@ import com.sedmelluq.discord.lavaplayer.track.AudioItem;
 import com.sedmelluq.discord.lavaplayer.track.AudioReference;
 import org.springframework.stereotype.Component;
 
-@RegisterSource
+@RegisterSource(priority = 100)
 public class YoutubeLinkSearch implements SearchSource {
     private final YoutubeAudioSourceManager sourceManager;
+
     public YoutubeLinkSearch(YoutubeAudioSourceManager sourceManager) {
         this.sourceManager = sourceManager;
     }
+
     @Override
     public AudioItem search(String query) {
-        return sourceManager.loadItem(null, new AudioReference(query, null));
+        return sourceManager.loadItem(null, new AudioReference(
+                query
+                        .replace(YoutubeMusicSearch.route, "")
+                        .replace(YoutubeSearch.route, ""),
+                null));
     }
 }

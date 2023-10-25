@@ -8,10 +8,10 @@ import com.sedmelluq.discord.lavaplayer.track.AudioReference;
 
 //This is almost the same as YoutubeSearch, only difference is route string.
 //Which means it could be merged into one class, but I don't want to overcomplicate things
-@RegisterSource
+@RegisterSource(priority = 0)
 public class YoutubeMusicSearch implements SearchSource {
     private final YoutubeAudioSourceManager sourceManager;
-    private final String route = "ytmsearch:";
+    public static final String route = "ytmsearch:";
     public YoutubeMusicSearch(YoutubeAudioSourceManager sourceManager) {
         this.sourceManager = sourceManager;
     }
