@@ -1,5 +1,6 @@
 package com.mkkl.canyonbot.music.search;
 
+import com.mkkl.canyonbot.music.search.internal.sources.SearchSource;
 import com.sedmelluq.discord.lavaplayer.source.AudioSourceManager;
 import com.sedmelluq.discord.lavaplayer.track.AudioItem;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
@@ -37,13 +38,9 @@ public class SearchManager {
         );
     }
 
-    public AudioItem search(String query, AudioSourceManager sourceManager) {
-        return sourceManager.loadItem(null, new AudioReference(query, null));
-    }
-
     public Mono<SearchResult> searchSync(String query) {
-        for(AudioSourceManager sourceManager : sourceRegistry.getSourceList()) {
-            AudioItem item = search(query, sourceManager);
+        for(SearchSource sourceManager : sourceRegistry.getSourceList()) {
+            AudioItem item = sourceManager.search(query);
             if(item != null) {
                 if (item instanceof AudioTrack) {
                     return Mono.just(new SearchResult(null, List.of((AudioTrack) item)));
