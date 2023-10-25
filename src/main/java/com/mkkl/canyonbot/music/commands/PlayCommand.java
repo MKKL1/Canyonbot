@@ -2,8 +2,8 @@ package com.mkkl.canyonbot.music.commands;
 
 import com.mkkl.canyonbot.commands.BotCommand;
 import com.mkkl.canyonbot.commands.RegisterCommand;
+import com.mkkl.canyonbot.music.search.SearchManager;
 import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler;
-import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
@@ -20,8 +20,9 @@ import java.util.concurrent.ExecutionException;
 
 @RegisterCommand
 public class PlayCommand extends BotCommand {
-    private final AudioPlayerManager audioPlayerManager;
-    public PlayCommand(AudioPlayerManager audioPlayerManager) {
+    private final SearchManager searchManager;
+
+    public PlayCommand(SearchManager searchManager) {
         super(ApplicationCommandRequest.builder()
                 .name("play")
                 .description("Play a song")
@@ -32,60 +33,76 @@ public class PlayCommand extends BotCommand {
                         .required(true)
                         .build())
                 .build());
-        this.audioPlayerManager = audioPlayerManager;
+        this.searchManager = searchManager;
     }
 
     @Override
     public Mono<Void> execute(ChatInputInteractionEvent event) {
-        //TODO not safe
-        String identifier = event.getInteraction().getCommandInteraction()
+        String query = event.getInteraction()
+                .getCommandInteraction()
                 .flatMap(commandInteraction -> commandInteraction.getOption("url"))
                 .flatMap(ApplicationCommandInteractionOption::getValue)
-                .map(ApplicationCommandInteractionOptionValue::asString).orElseThrow();//TODO throw exception
-        return event.deferReply().then(handleIdentifier(event, identifier)).then();
+                .map(ApplicationCommandInteractionOptionValue::asString)
+                .orElseThrow();//TODO throw exception
+        return event.deferReply()
+                .then(handleQuery(event, query))
+                .then();
     }
 
-    private Mono<Message> handleIdentifier(ChatInputInteractionEvent event, String identifier) {
-        ResultHandler resultHandler = new ResultHandler(event);
-        try {
-            audioPlayerManager.loadItem(identifier, resultHandler).get();
-        } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException(e);
-        }
-        return resultHandler.response;
+    private Mono<Message> handleQuery(ChatInputInteractionEvent event, String query) {
+        return searchManager.search(query)
+                .flatMap(searchResult -> {
+                    Mono<Message> message = event.editReply("No match found");
+                    if (searchResult.getPlaylists() != null && !searchResult.getPlaylists()
+                            .isEmpty()) {
+                        message = event.editReply("Loaded playlist " + searchResult.getPlaylists()
+                                .getFirst()
+                                .getTracks()
+                                .stream()
+                                .map(audioTrack -> audioTrack.getInfo().title)
+                                .reduce("", (s, s2) -> s + "\n" + s2));
+                    } else if (searchResult.getTracks() != null && !searchResult.getTracks().isEmpty()) {
+                        message = event.editReply("Loaded tracks " + searchResult.getTracks().stream()
+                                .map(audioTrack -> audioTrack.getInfo().title)
+                                .reduce("", (s, s2) -> s + "\n" + s2));
+                    }
+
+                    return message;
+                })
+                .onErrorResume(throwable -> event.editReply("Error:" + throwable.getMessage()));
     }
 
-    private static class ResultHandler implements AudioLoadResultHandler {
-
-        private Mono<Message> response;
-        private final ChatInputInteractionEvent event;
-
-        public ResultHandler(ChatInputInteractionEvent event) {
-            this.event = event;
-        }
-
-        @Override
-        public void trackLoaded(AudioTrack audioTrack) {
-            response = event.editReply("Loaded " + audioTrack.getInfo().title);
-            //Add to queue
-        }
-
-        @Override
-        public void playlistLoaded(AudioPlaylist audioPlaylist) {
-            response = event.editReply("Loaded playlist " + audioPlaylist.getTracks()
-                    .stream()
-                    .map(audioTrack -> audioTrack.getInfo().title)
-                    .reduce("", (s, s2) -> s + "\n" + s2));
-        }
-
-        @Override
-        public void noMatches() {
-            response = event.editReply("No match found");
-        }
-
-        @Override
-        public void loadFailed(FriendlyException e) {
-            response = event.editReply("Load failed: " + e.getMessage());
-        }
-    }
+//    private static class ResultHandler implements AudioLoadResultHandler {
+//
+//        private Mono<Message> response;
+//        private final ChatInputInteractionEvent event;
+//
+//        public ResultHandler(ChatInputInteractionEvent event) {
+//            this.event = event;
+//        }
+//
+//        @Override
+//        public void trackLoaded(AudioTrack audioTrack) {
+//            response = event.editReply("Loaded " + audioTrack.getInfo().title);
+//            //Add to queue
+//        }
+//
+//        @Override
+//        public void playlistLoaded(AudioPlaylist audioPlaylist) {
+//            response = event.editReply("Loaded playlist " + audioPlaylist.getTracks()
+//                    .stream()
+//                    .map(audioTrack -> audioTrack.getInfo().title)
+//                    .reduce("", (s, s2) -> s + "\n" + s2));
+//        }
+//
+//        @Override
+//        public void noMatches() {
+//            response = event.editReply("No match found");
+//        }
+//
+//        @Override
+//        public void loadFailed(FriendlyException e) {
+//            response = event.editReply("Load failed: " + e.getMessage());
+//        }
+//    }
 }

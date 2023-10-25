@@ -11,15 +11,15 @@ import org.springframework.stereotype.Service;
 @Service
 public class MusicPlayerService {
 
-    private AudioPlayerManager playerManager;
     @Bean
-    public MusicPlayer musicPlayer() {
+    public MusicPlayer musicPlayer(AudioPlayerManager playerManager) {
         return new LavaPlayer(playerManager.createPlayer());
     }
 
     @Bean
     public AudioPlayerManager audioPlayerManager() {
-        playerManager = new DefaultAudioPlayerManager();//TODO remove search from this audio manager
+        System.out.printf("Creating audio player manager%n");
+        AudioPlayerManager playerManager = new DefaultAudioPlayerManager();//TODO remove search from this audio manager
         AudioSourceManagers.registerRemoteSources(playerManager);
         //playerManager.getConfiguration().setFrameBufferFactory(NonAllocatingAudioFrameBuffer::new);
         return playerManager;

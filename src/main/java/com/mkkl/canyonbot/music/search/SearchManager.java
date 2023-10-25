@@ -9,6 +9,8 @@ import com.sedmelluq.lava.common.tools.DaemonThreadFactory;
 import com.sedmelluq.lava.common.tools.ExecutorTools;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -22,11 +24,17 @@ public class SearchManager {
     private static final int LOADER_QUEUE_CAPACITY = 5000;
 
     private final SourceRegistry sourceRegistry;
-    private final ThreadPoolExecutor trackInfoExecutorService;
+    private final Scheduler scheduler;
     public SearchManager(SourceRegistry sourceRegistry) {
         this.sourceRegistry = sourceRegistry;
-        trackInfoExecutorService = ExecutorTools.createEagerlyScalingExecutor(1, DEFAULT_LOADER_POOL_SIZE,
-                TimeUnit.SECONDS.toMillis(30), LOADER_QUEUE_CAPACITY, new DaemonThreadFactory("info-loader"));
+        scheduler = Schedulers.fromExecutorService(
+                ExecutorTools.createEagerlyScalingExecutor(1,
+                    DEFAULT_LOADER_POOL_SIZE,
+                    TimeUnit.SECONDS.toMillis(30),
+                    LOADER_QUEUE_CAPACITY,
+                    new DaemonThreadFactory("info-loader")
+                )
+        );
     }
 
     public AudioItem search(String query, AudioSourceManager sourceManager) {
@@ -42,14 +50,14 @@ public class SearchManager {
                 } else if (item instanceof AudioPlaylist) {
                     return Mono.just(new SearchResult(List.of((AudioPlaylist) item), null));
                 }
-                return Mono.error(new RuntimeException("Unknown audio item type"));
+                return Mono.error(new RuntimeException("Unknown AudioItem type for query: " + query));
             }
         }
-        return Mono.error(new RuntimeException("No source manager found for query"));
+        return Mono.error(new RuntimeException("No source manager found for query: " + query));
     }
 
     public Mono<SearchResult> search(String query) {
-        return Mono.fromCallable(() -> trackInfoExecutorService.submit(() -> searchSync(query)).get().block());//TODO async
+        return searchSync(query).subscribeOn(scheduler);
     }
 
 
