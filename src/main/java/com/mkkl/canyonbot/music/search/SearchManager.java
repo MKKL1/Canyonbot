@@ -29,10 +29,13 @@ public class SearchManager {
                 )
         );
     }
+    public Mono<SearchResult> searchSync(String query, SearchSource searchSource) {
+        return Mono.just(searchSource.search(query));
+    }
 
     public Mono<SearchResult> searchSync(String query) {
         for(SearchSource sourceManager : sourceRegistry.getSourceList()) {
-            SearchResult item = sourceManager.search(query);
+            SearchResult item = sourceManager.search(query); //TODO replace repeating code
             if(!item.isEmpty()) return Mono.just(item);
         }
         return Mono.error(new RuntimeException("No source manager found for query: " + query));
@@ -40,6 +43,10 @@ public class SearchManager {
 
     public Mono<SearchResult> search(String query) {
         return searchSync(query).subscribeOn(scheduler);
+    }
+
+    public Mono<SearchResult> search(String query, SearchSource searchSource) {
+        return searchSync(query, searchSource).subscribeOn(scheduler);
     }
 
 

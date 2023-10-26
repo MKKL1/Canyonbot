@@ -13,15 +13,22 @@ import java.util.Optional;
 @Component
 public class CommandRegistry {
     private final HashMap<String, BotCommand> commandsByName;
+    private final HashMap<String, AutoCompleteCommand> autoCompleteCommandsByName;
     private final CommandRegistrarFactory commandRegistrarFactory;
     public CommandRegistry(CommandRegistrarFactory commandRegistrarFactory, ApplicationContext context) {
         this.commandRegistrarFactory = commandRegistrarFactory;
         this.commandsByName = new HashMap<>();
+        this.autoCompleteCommandsByName = new HashMap<>();
         Map<String,Object> commandBeans = context.getBeansWithAnnotation(RegisterCommand.class);
         for (Map.Entry<String, Object> entry : commandBeans.entrySet()) {
             if (entry.getValue() instanceof BotCommand) {
-                add((BotCommand) entry.getValue());
+                BotCommand command = (BotCommand) entry.getValue();
+                add(command);
+                if(command instanceof AutoCompleteCommand) {
+                    autoCompleteCommandsByName.put(command.getCommandRequest().name(), (AutoCompleteCommand) command);
+                }
             }
+
         }
         getCommandRegistrar().registerCommands().subscribe();//TODO not sure if it should be here
     }
@@ -52,5 +59,9 @@ public class CommandRegistry {
 
     public Optional<BotCommand> getCommandByName(String commandName) {
         return Optional.ofNullable(commandsByName.get(commandName));
+    }
+
+    public Optional<AutoCompleteCommand> getAutoCompleteCommandByName(String commandName) {
+        return Optional.ofNullable(autoCompleteCommandsByName.get(commandName));
     }
 }

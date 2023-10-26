@@ -20,8 +20,7 @@ public class SourceRegistry {
         Multimap<Integer, SearchSource> sourcePriorityMap = ArrayListMultimap.create();
         Map<String, Object> sourceBeans = context.getBeansWithAnnotation(RegisterSource.class);
         for (Map.Entry<String, Object> entry : sourceBeans.entrySet()) {
-            if (entry.getValue() instanceof SearchSource) {
-                SearchSource source = (SearchSource) entry.getValue();
+            if (entry.getValue() instanceof SearchSource source) {
                 sourcePriorityMap.put(source.getClass()
                         .getAnnotation(RegisterSource.class)
                         .priority(), source);

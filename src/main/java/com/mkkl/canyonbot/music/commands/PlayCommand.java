@@ -1,5 +1,6 @@
 package com.mkkl.canyonbot.music.commands;
 
+import com.mkkl.canyonbot.commands.AutoCompleteCommand;
 import com.mkkl.canyonbot.commands.BotCommand;
 import com.mkkl.canyonbot.commands.RegisterCommand;
 import com.mkkl.canyonbot.music.search.SearchManager;
@@ -7,19 +8,23 @@ import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
+import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.command.ApplicationCommandOption;
 import discord4j.core.object.entity.Message;
+import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
 import discord4j.discordjson.json.ApplicationCommandOptionData;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import reactor.core.publisher.Mono;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 @RegisterCommand
-public class PlayCommand extends BotCommand {
+public class PlayCommand extends BotCommand implements AutoCompleteCommand {
     private final SearchManager searchManager;
 
     public PlayCommand(SearchManager searchManager) {
@@ -27,10 +32,17 @@ public class PlayCommand extends BotCommand {
                 .name("play")
                 .description("Play a song")
                 .addOption(ApplicationCommandOptionData.builder()
-                        .name("url")
+                        .name("query")
                         .type(ApplicationCommandOption.Type.STRING.getValue())
-                        .description("Song url to play")
+                        .description("url or search query")
                         .required(true)
+                        .build())
+                .addOption(ApplicationCommandOptionData.builder()
+                        .name("source")
+                        .type(ApplicationCommandOption.Type.STRING.getValue())
+                        .description("source to search from")
+                        .required(false)
+                        .autocomplete(true)
                         .build())
                 .build());
         this.searchManager = searchManager;
@@ -40,7 +52,7 @@ public class PlayCommand extends BotCommand {
     public Mono<Void> execute(ChatInputInteractionEvent event) {
         String query = event.getInteraction()
                 .getCommandInteraction()
-                .flatMap(commandInteraction -> commandInteraction.getOption("url"))
+                .flatMap(commandInteraction -> commandInteraction.getOption("query"))
                 .flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asString)
                 .orElseThrow();//TODO throw exception
@@ -61,8 +73,10 @@ public class PlayCommand extends BotCommand {
                                 .stream()
                                 .map(audioTrack -> audioTrack.getInfo().title)
                                 .reduce("", (s, s2) -> s + "\n" + s2));
-                    } else if (searchResult.getTracks() != null && !searchResult.getTracks().isEmpty()) {
-                        message = event.editReply("Loaded tracks " + searchResult.getTracks().stream()
+                    } else if (searchResult.getTracks() != null && !searchResult.getTracks()
+                            .isEmpty()) {
+                        message = event.editReply("Loaded tracks " + searchResult.getTracks()
+                                .stream()
                                 .map(audioTrack -> audioTrack.getInfo().title)
                                 .reduce("", (s, s2) -> s + "\n" + s2));
                     }
@@ -70,5 +84,21 @@ public class PlayCommand extends BotCommand {
                     return message;
                 })
                 .onErrorResume(throwable -> event.editReply("Error:" + throwable.getMessage()));
+    }
+
+    @Override
+    public Mono<Void> autoComplete(ChatInputAutoCompleteEvent event) {
+        String typing = event.getFocusedOption()
+                .getValue()
+                .map(ApplicationCommandInteractionOptionValue::asString)
+                .orElse("");
+        //TODO replace with actual search
+
+        List<ApplicationCommandOptionChoiceData> suggestions = new ArrayList<>();
+        suggestions.add(ApplicationCommandOptionChoiceData.builder().name("Thing 1").value("value").build());
+        suggestions.add(ApplicationCommandOptionChoiceData.builder().name("Something 2").value("other").build());
+        suggestions.add(ApplicationCommandOptionChoiceData.builder().name("some other input").value("pick me").build());
+
+        return event.respondWithSuggestions(suggestions);
     }
 }

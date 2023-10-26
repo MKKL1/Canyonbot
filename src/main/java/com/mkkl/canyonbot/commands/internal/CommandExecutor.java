@@ -1,9 +1,12 @@
 package com.mkkl.canyonbot.commands.internal;
 
+import com.mkkl.canyonbot.commands.AutoCompleteCommand;
 import com.mkkl.canyonbot.commands.BotCommand;
 import com.mkkl.canyonbot.commands.CommandRegistry;
 import discord4j.core.DiscordClient;
 import discord4j.core.event.ReactiveEventAdapter;
+import discord4j.core.event.domain.interaction.AutoCompleteInteractionEvent;
+import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import org.reactivestreams.Publisher;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,15 +28,19 @@ public class CommandExecutor {
     }
 
     public Mono<Void> register() {
-        return discordClient.withGateway(gateway -> gateway.on(new ReactiveEventAdapter() {
-            @Override
-            public Publisher<?> onChatInputInteraction(ChatInputInteractionEvent event) {
+        return discordClient.withGateway(gateway -> gateway.on(ChatInputInteractionEvent.class, event -> {
                 Optional<BotCommand> optionalCommand = commandRegistry.getCommandByName(event.getCommandName());
                 if (optionalCommand.isEmpty()) {
                     return event.reply("Command not found");//TODO localize
                 }
                 return optionalCommand.get().execute(event);
             }
-        }));
+        )).and(discordClient.withGateway(gateway -> gateway.on(ChatInputAutoCompleteEvent.class, event -> {
+            Optional<AutoCompleteCommand> optionalCommand = commandRegistry.getAutoCompleteCommandByName(event.getCommandName());
+            if (optionalCommand.isEmpty()) {
+                return Mono.empty();
+            }
+            return optionalCommand.get().autoComplete(event);
+        })));
     }
 }

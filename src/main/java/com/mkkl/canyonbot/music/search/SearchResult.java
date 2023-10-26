@@ -10,15 +10,13 @@ import lombok.NonNull;
 
 import java.util.List;
 
+@Getter
 public class SearchResult {
 
-    @Getter
     @Nullable
     private final List<AudioPlaylist> playlists;
-    @Getter
     @Nullable
     private final List<AudioTrack> tracks;
-    @Getter
     private final SearchSource source;
 
     private SearchResult(@Nullable List<AudioPlaylist> playlists,
