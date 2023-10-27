@@ -4,10 +4,6 @@ import com.mkkl.canyonbot.commands.AutoCompleteCommand;
 import com.mkkl.canyonbot.commands.BotCommand;
 import com.mkkl.canyonbot.commands.RegisterCommand;
 import com.mkkl.canyonbot.music.search.SearchManager;
-import com.sedmelluq.discord.lavaplayer.player.AudioLoadResultHandler;
-import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
-import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
-import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
@@ -21,12 +17,10 @@ import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 @RegisterCommand
 public class PlayCommand extends BotCommand implements AutoCompleteCommand {
     private final SearchManager searchManager;
-
     public PlayCommand(SearchManager searchManager) {
         super(ApplicationCommandRequest.builder()
                 .name("play")
@@ -93,7 +87,6 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                 .map(ApplicationCommandInteractionOptionValue::asString)
                 .orElse("");
         //TODO replace with actual search
-
         List<ApplicationCommandOptionChoiceData> suggestions = new ArrayList<>();
         suggestions.add(ApplicationCommandOptionChoiceData.builder().name("Thing 1").value("value").build());
         suggestions.add(ApplicationCommandOptionChoiceData.builder().name("Something 2").value("other").build());

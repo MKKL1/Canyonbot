@@ -8,7 +8,9 @@ import lombok.Getter;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 @Component
 public class SourceRegistry {
@@ -31,4 +33,5 @@ public class SourceRegistry {
                 .sorted((o1, o2) -> o2.getKey() - o1.getKey())
                 .forEachOrdered(e -> sourceList.add(e.getValue()));
     }
+
 }

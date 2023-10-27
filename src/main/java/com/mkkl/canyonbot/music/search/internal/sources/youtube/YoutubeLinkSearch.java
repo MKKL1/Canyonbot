@@ -8,7 +8,6 @@ import com.sedmelluq.discord.lavaplayer.track.AudioItem;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioReference;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
-import org.springframework.stereotype.Component;
 
 @RegisterSource(priority = 100)
 public class YoutubeLinkSearch implements SearchSource {
@@ -27,6 +26,17 @@ public class YoutubeLinkSearch implements SearchSource {
         if(item instanceof AudioTrack)
             return SearchResult.fromTrack((AudioTrack) item, this);
         return SearchResult.empty(this);//TODO log this
+    }
+
+    //TODO if name is the same as another source, execute both ordered by priority
+    @Override
+    public String name() {
+        return "ytlink";
+    }
+
+    @Override
+    public String[] autoCompleteAliases() {
+        return new String[] {"youtube", "yt", "link"};
     }
 
     private String stripRoutePrefixes(String query) {
