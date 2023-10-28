@@ -90,9 +90,9 @@
         </dependency>
 
         <dependency>
-            <groupId>com.intuit.fuzzymatcher</groupId>
-            <artifactId>fuzzy-matcher</artifactId>
-            <version>1.2.1</version>
+            <groupId>org.apache.lucene</groupId>
+            <artifactId>lucene-core</artifactId>
+            <version>9.8.0</version>
         </dependency>
     </dependencies>
 
