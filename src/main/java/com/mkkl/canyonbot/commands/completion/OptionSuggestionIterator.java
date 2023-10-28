@@ -38,12 +38,8 @@ public class OptionSuggestionIterator implements InputIterator {
     public BytesRef next() {
         if (entityIterator.hasNext()) {
             currentItem = entityIterator.next();
-            try {
-                return new BytesRef(currentItem.getSuggestibleText().getBytes("UTF8"));
-            } catch (final UnsupportedEncodingException e) {
-                throw new Error("Couldn't convert to UTF-8");
-            }
-        } else { // returning null is fine for lucene...
+                return new BytesRef(currentItem.getName().getBytes(StandardCharsets.UTF_8));
+        } else {
             return null;
         }
     }

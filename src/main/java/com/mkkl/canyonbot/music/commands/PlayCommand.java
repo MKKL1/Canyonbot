@@ -6,6 +6,8 @@ import com.mkkl.canyonbot.commands.RegisterCommand;
 import com.mkkl.canyonbot.commands.completion.CommandOptionCompletion;
 import com.mkkl.canyonbot.commands.completion.CommandOptionCompletionManager;
 import com.mkkl.canyonbot.music.search.SearchManager;
+import com.mkkl.canyonbot.music.search.SourceRegistry;
+import com.mkkl.canyonbot.music.search.internal.sources.SourceSuggestionOption;
 import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
@@ -26,7 +28,7 @@ import java.util.List;
 public class PlayCommand extends BotCommand implements AutoCompleteCommand {
     private final SearchManager searchManager;
     private CommandOptionCompletionManager completionManager;
-    public PlayCommand(SearchManager searchManager) {
+    public PlayCommand(SearchManager searchManager, SourceRegistry sourceRegistry) {
         super(ApplicationCommandRequest.builder()
                 .name("play")
                 .description("Play a song")
@@ -45,10 +47,7 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                         .build())
                 .build());
         completionManager = new CommandOptionCompletionManager();
-        List<Document> documents = new ArrayList<>();
-        Document document1 = new Document();
-        completionManager.addOption("source", new CommandOptionCompletion(List.of(
-        )));
+        completionManager.addOption("source", new CommandOptionCompletion(sourceRegistry.sourceSuggestionOptions()));
         this.searchManager = searchManager;
     }
 
@@ -92,6 +91,6 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
 
     @Override
     public Mono<Void> autoComplete(ChatInputAutoCompleteEvent event) {
-        return
+        return completionManager.handleAutoCompletionEvent(event);
     }
 }

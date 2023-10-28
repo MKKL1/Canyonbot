@@ -20,6 +20,7 @@ import reactor.core.publisher.Mono;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class CommandOptionCompletion { //TODO interface
@@ -27,13 +28,14 @@ public class CommandOptionCompletion { //TODO interface
     private final Directory directory = new ByteBuffersDirectory();
     private AnalyzingInfixSuggester suggester;
 
-    public CommandOptionCompletion(List<Document> documents) {
+    public CommandOptionCompletion(List<SuggestionOption> options) {
         try {
             suggester = new AnalyzingInfixSuggester(directory, new StandardAnalyzer());
-            suggester.build();
+            suggester.build(new OptionSuggestionIterator(options.iterator()));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+
     }
 
     public Mono<List<Lookup.LookupResult>> handleCommandInteraction(ApplicationCommandInteractionOption option) {
