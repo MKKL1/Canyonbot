@@ -6,29 +6,27 @@ import com.mkkl.canyonbot.commands.RegisterCommand;
 import com.mkkl.canyonbot.commands.completion.CommandOptionCompletion;
 import com.mkkl.canyonbot.commands.completion.CommandOptionCompletionManager;
 import com.mkkl.canyonbot.music.search.SearchManager;
+import com.mkkl.canyonbot.music.search.SearchResult;
 import com.mkkl.canyonbot.music.search.SourceRegistry;
-import com.mkkl.canyonbot.music.search.internal.sources.SourceSuggestionOption;
+import com.mkkl.canyonbot.music.search.internal.sources.SearchSource;
 import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.command.ApplicationCommandOption;
 import discord4j.core.object.entity.Message;
-import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
 import discord4j.discordjson.json.ApplicationCommandOptionData;
 import discord4j.discordjson.json.ApplicationCommandRequest;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.StoredField;
 import reactor.core.publisher.Mono;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Optional;
 
 @RegisterCommand
 public class PlayCommand extends BotCommand implements AutoCompleteCommand {
     private final SearchManager searchManager;
+    private final SourceRegistry sourceRegistry;
     private CommandOptionCompletionManager completionManager;
-    public PlayCommand(SearchManager searchManager, SourceRegistry sourceRegistry) {
+    public PlayCommand(SearchManager searchManager, SourceRegistry sourceRegistry, SourceRegistry sourceRegistry1) {
         super(ApplicationCommandRequest.builder()
                 .name("play")
                 .description("Play a song")
@@ -46,6 +44,7 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                         .autocomplete(true)
                         .build())
                 .build());
+        this.sourceRegistry = sourceRegistry1;
         completionManager = new CommandOptionCompletionManager();
         completionManager.addOption("source", new CommandOptionCompletion(sourceRegistry.sourceSuggestionOptions()));
         this.searchManager = searchManager;
@@ -53,19 +52,35 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
 
     @Override
     public Mono<Void> execute(ChatInputInteractionEvent event) {
+        //TODO find a way to make this more generic
         String query = event.getInteraction()
                 .getCommandInteraction()
                 .flatMap(commandInteraction -> commandInteraction.getOption("query"))
                 .flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asString)
                 .orElseThrow();//TODO throw exception
+
+        String source = event.getInteraction().getCommandInteraction()
+                .flatMap(commandInteraction -> commandInteraction.getOption("source"))
+                .flatMap(ApplicationCommandInteractionOption::getValue)
+                .map(ApplicationCommandInteractionOptionValue::asString)
+                .orElse(null);
+
         return event.deferReply()
-                .then(handleQuery(event, query))
+                .then(handleQuery(event, query, source))
                 .then();
     }
 
-    private Mono<Message> handleQuery(ChatInputInteractionEvent event, String query) {
-        return searchManager.search(query)
+    private Mono<Message> handleQuery(ChatInputInteractionEvent event, String query, String source) {
+        Mono<SearchResult> searchResultMono;
+        if(source==null) {
+            searchResultMono = searchManager.search(query);
+        } else {
+            Optional<SearchSource> sourceOptional = sourceRegistry.getSource(source);
+            if(sourceOptional.isEmpty()) return event.editReply("Source not found");
+            searchResultMono = searchManager.search(query, sourceOptional.get());
+        }
+        return searchResultMono
                 .flatMap(searchResult -> {
                     Mono<Message> message = event.editReply("No match found");
                     if (searchResult.getPlaylists() != null && !searchResult.getPlaylists()
