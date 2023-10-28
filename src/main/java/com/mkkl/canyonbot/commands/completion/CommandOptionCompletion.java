@@ -10,6 +10,9 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.suggest.DocumentDictionary;
+import org.apache.lucene.search.suggest.Lookup;
+import org.apache.lucene.search.suggest.analyzing.AnalyzingInfixSuggester;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.QueryBuilder;
@@ -22,35 +25,25 @@ import java.util.List;
 public class CommandOptionCompletion { //TODO interface
 
     private final Directory directory = new ByteBuffersDirectory();
-    private final IndexSearcher searcher;
-    private final IndexReader reader;
+    private AnalyzingInfixSuggester suggester;
 
     public CommandOptionCompletion(List<Document> documents) {
-        IndexWriterConfig config = new IndexWriterConfig(new StandardAnalyzer());
-        try(IndexWriter writer = new IndexWriter(directory, config)) {
-            for(Document document : documents)
-                writer.addDocument(document);
-            reader = DirectoryReader.open(directory);
-            searcher = new IndexSearcher(reader);
+        try {
+            suggester = new AnalyzingInfixSuggester(directory, new StandardAnalyzer());
+            suggester.build();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public Mono<List<Document>> handleCommandInteraction(ApplicationCommandInteractionOption option) {
+    public Mono<List<Lookup.LookupResult>> handleCommandInteraction(ApplicationCommandInteractionOption option) {
         String typing = option.getValue()
                 .map(ApplicationCommandInteractionOptionValue::asString)
                 .orElse("");
         if(typing.isEmpty()) return Mono.empty();
-        Query query = new QueryBuilder(new StandardAnalyzer()).createBooleanQuery("name", typing);
         try {
-            TopDocs topDocs = searcher.search(query, 10);
-            List<Document> documents = new ArrayList<>();
-            StoredFields storedFields = reader.storedFields();
-            for (ScoreDoc hit : topDocs.scoreDocs) {
-                documents.add(storedFields.document(hit.doc));
-            }
-            return Mono.just(documents);
+            return Mono.just(suggester.lookup(typing, 10, true, true))
+                    .flatMap(lookupResults -> Mono.just(new ArrayList<>(lookupResults)));
         } catch (IOException e) {
             return Mono.error(e);
         }

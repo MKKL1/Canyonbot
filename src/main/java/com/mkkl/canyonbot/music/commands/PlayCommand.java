@@ -48,7 +48,6 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
         List<Document> documents = new ArrayList<>();
         Document document1 = new Document();
         completionManager.addOption("source", new CommandOptionCompletion(List.of(
-
         )));
         this.searchManager = searchManager;
     }
