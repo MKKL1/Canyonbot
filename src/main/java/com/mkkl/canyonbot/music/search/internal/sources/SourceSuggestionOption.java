@@ -28,5 +28,5 @@ public class SourceSuggestionOption implements SuggestionOption {
     @Override
     public String[] getContexts() {
         return source.autoCompleteAliases();
-    }
+    } //This is not really a context
 }

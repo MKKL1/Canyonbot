@@ -15,6 +15,7 @@ import org.apache.lucene.search.suggest.Lookup;
 import org.apache.lucene.search.suggest.analyzing.AnalyzingInfixSuggester;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.QueryBuilder;
 import reactor.core.publisher.Mono;
 
@@ -22,27 +23,36 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 public class CommandOptionCompletion { //TODO interface
 
+    private final int MAX_RESULTS = 25;
+
     private final Directory directory = new ByteBuffersDirectory();
     private AnalyzingInfixSuggester suggester;
-
+    private List<Lookup.LookupResult> defaultResults;
     public CommandOptionCompletion(List<SuggestionOption> options) {
+
         try {
             suggester = new AnalyzingInfixSuggester(directory, new StandardAnalyzer());
             suggester.build(new OptionSuggestionIterator(options.iterator()));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+        defaultResults = new ArrayList<>();
 
+        for (SuggestionOption option : options) {
+            defaultResults.add(new Lookup.LookupResult(option.getName(), option.getWeight()));
+            if (defaultResults.size() >= MAX_RESULTS) break;
+        }
     }
 
     public Mono<List<Lookup.LookupResult>> handleCommandInteraction(ApplicationCommandInteractionOption option) {
         String typing = option.getValue()
                 .map(ApplicationCommandInteractionOptionValue::asString)
                 .orElse("");
-        if(typing.isEmpty()) return Mono.empty();
+        if(typing.isEmpty()) return Mono.just(defaultResults);
         try {
             return Mono.just(suggester.lookup(typing, 10, true, true))
                     .flatMap(lookupResults -> Mono.just(new ArrayList<>(lookupResults)));

@@ -91,6 +91,7 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
 
     @Override
     public Mono<Void> autoComplete(ChatInputAutoCompleteEvent event) {
-        return completionManager.handleAutoCompletionEvent(event);
+        //TODO use scheduler
+        return completionManager.handleAutoCompletionEvent(event);//TODO redis may be used to perform searches
     }
 }
