@@ -3,6 +3,8 @@ package com.mkkl.canyonbot.music.commands;
 import com.mkkl.canyonbot.commands.AutoCompleteCommand;
 import com.mkkl.canyonbot.commands.BotCommand;
 import com.mkkl.canyonbot.commands.RegisterCommand;
+import com.mkkl.canyonbot.commands.completion.CommandOptionCompletion;
+import com.mkkl.canyonbot.commands.completion.CommandOptionCompletionManager;
 import com.mkkl.canyonbot.music.search.SearchManager;
 import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
@@ -13,6 +15,8 @@ import discord4j.core.object.entity.Message;
 import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
 import discord4j.discordjson.json.ApplicationCommandOptionData;
 import discord4j.discordjson.json.ApplicationCommandRequest;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.StoredField;
 import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
@@ -21,6 +25,7 @@ import java.util.List;
 @RegisterCommand
 public class PlayCommand extends BotCommand implements AutoCompleteCommand {
     private final SearchManager searchManager;
+    private CommandOptionCompletionManager completionManager;
     public PlayCommand(SearchManager searchManager) {
         super(ApplicationCommandRequest.builder()
                 .name("play")
@@ -39,6 +44,12 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                         .autocomplete(true)
                         .build())
                 .build());
+        completionManager = new CommandOptionCompletionManager();
+        List<Document> documents = new ArrayList<>();
+        Document document1 = new Document();
+        completionManager.addOption("source", new CommandOptionCompletion(List.of(
+
+        )));
         this.searchManager = searchManager;
     }
 
@@ -82,16 +93,6 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
 
     @Override
     public Mono<Void> autoComplete(ChatInputAutoCompleteEvent event) {
-        String typing = event.getFocusedOption()
-                .getValue()
-                .map(ApplicationCommandInteractionOptionValue::asString)
-                .orElse("");
-        //TODO replace with actual search
-        List<ApplicationCommandOptionChoiceData> suggestions = new ArrayList<>();
-        suggestions.add(ApplicationCommandOptionChoiceData.builder().name("Thing 1").value("value").build());
-        suggestions.add(ApplicationCommandOptionChoiceData.builder().name("Something 2").value("other").build());
-        suggestions.add(ApplicationCommandOptionChoiceData.builder().name("some other input").value("pick me").build());
-
-        return event.respondWithSuggestions(suggestions);
+        return
     }
 }
