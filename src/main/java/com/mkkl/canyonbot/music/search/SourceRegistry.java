@@ -5,7 +5,6 @@ import com.google.common.collect.Multimap;
 import com.mkkl.canyonbot.commands.completion.SuggestionOption;
 import com.mkkl.canyonbot.music.search.internal.sources.RegisterSource;
 import com.mkkl.canyonbot.music.search.internal.sources.SearchSource;
-import com.mkkl.canyonbot.music.search.internal.sources.SourceSuggestionOption;
 import lombok.Getter;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
@@ -29,7 +28,7 @@ public class SourceRegistry {
         for (Map.Entry<String, Object> entry : sourceBeans.entrySet()) {
             if (entry.getValue() instanceof SearchSource source) {
                 //TODO check for duplicate names
-                sourceMap.put(source.name(), source);
+                sourceMap.put(source.identifier(), source);
 
                 sourcePriorityMap.put(source.getClass()
                         .getAnnotation(RegisterSource.class)
@@ -42,15 +41,7 @@ public class SourceRegistry {
                 .forEachOrdered(e -> sourceList.add(e.getValue()));
     }
 
-    public Optional<SearchSource> getSource(String name) {
-        return Optional.ofNullable(sourceMap.getOrDefault(name, null));
-    }
-
-    public List<SuggestionOption> sourceSuggestionOptions() {
-        List<SuggestionOption> options = new ArrayList<>();
-        for (SearchSource source : sourceList) {
-            options.add(new SourceSuggestionOption(source));
-        }
-        return options;
+    public Optional<SearchSource> getSource(String identifier) {
+        return Optional.ofNullable(sourceMap.getOrDefault(identifier, null));
     }
 }

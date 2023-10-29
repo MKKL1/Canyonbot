@@ -22,11 +22,11 @@ public class YoutubeMusicSearch implements SearchSource {
 
     @Override
     public String name() {
-        return "ytm";
+        return "YoutubeMusic search";
     }
 
     @Override
-    public String[] autoCompleteAliases() {
-        return new String[] {"youtube", "yt", "search", "music", "youtubemusic"};
+    public String identifier() {
+        return "ytm";
     }
 }

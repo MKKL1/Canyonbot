@@ -28,17 +28,16 @@ public class YoutubeLinkSearch implements SearchSource {
         return SearchResult.empty(this);//TODO log this
     }
 
-    //TODO if name is the same as another source, execute both ordered by priority
+    //TODO if identifier is the same as another source, execute both ordered by priority
     @Override
     public String name() {
-        return "ytlink";
+        return "Youtube link";
     }
 
     @Override
-    public String[] autoCompleteAliases() {
-        return new String[] {"youtube", "yt", "link"};
+    public String identifier() {
+        return "ytlink";
     }
-
     private String stripRoutePrefixes(String query) {
         if(query.startsWith(YoutubeMusicSearch.route))
             query = query.substring(YoutubeMusicSearch.route.length());

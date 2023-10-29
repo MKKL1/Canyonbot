@@ -21,7 +21,7 @@ public class SearchResult {
 
     private SearchResult(@Nullable List<AudioPlaylist> playlists,
                          @Nullable List<AudioTrack> tracks,
-                         @NonNull SearchSource source) {
+                         @Nonnull SearchSource source) {
         this.playlists = playlists;
         this.tracks = tracks;
         this.source = source;
@@ -29,31 +29,31 @@ public class SearchResult {
 
     public SearchResult create(@Nullable List<AudioPlaylist> playlists,
                                @Nullable List<AudioTrack> tracks,
-                               @NonNull SearchSource source) {
+                               @Nonnull SearchSource source) {
         return new SearchResult(playlists, tracks, source);
     }
 
-    public static SearchResult empty(@NonNull SearchSource source) {
+    public static SearchResult empty(@Nonnull SearchSource source) {
         return new SearchResult(null, null, source);
     }
 
     public static SearchResult fromPlaylists(@Nullable List<AudioPlaylist> playlists,
-                                             @NonNull SearchSource source) {
+                                             @Nonnull SearchSource source) {
         return new SearchResult(playlists, null, source);
     }
 
     public static SearchResult fromPlaylist(@Nonnull AudioPlaylist playlist,
-                                            @NonNull SearchSource source) {
+                                            @Nonnull SearchSource source) {
         return new SearchResult(List.of(playlist), null, source);
     }
 
     public static SearchResult fromTracks(@Nullable List<AudioTrack> tracks,
-                                          @NonNull SearchSource source) {
+                                          @Nonnull SearchSource source) {
         return new SearchResult(null, tracks, source);
     }
 
     public static SearchResult fromTrack(@Nonnull AudioTrack track,
-                                         @NonNull SearchSource source) {
+                                         @Nonnull SearchSource source) {
         return new SearchResult(null, List.of(track), source);
     }
 

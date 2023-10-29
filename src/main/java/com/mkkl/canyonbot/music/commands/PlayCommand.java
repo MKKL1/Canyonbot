@@ -15,10 +15,15 @@ import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.command.ApplicationCommandOption;
 import discord4j.core.object.entity.Message;
+import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
 import discord4j.discordjson.json.ApplicationCommandOptionData;
 import discord4j.discordjson.json.ApplicationCommandRequest;
+import discord4j.discordjson.json.ImmutableApplicationCommandOptionChoiceData;
 import reactor.core.publisher.Mono;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 @RegisterCommand
@@ -26,7 +31,7 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
     private final SearchManager searchManager;
     private final SourceRegistry sourceRegistry;
     private CommandOptionCompletionManager completionManager;
-    public PlayCommand(SearchManager searchManager, SourceRegistry sourceRegistry, SourceRegistry sourceRegistry1) {
+    public PlayCommand(SearchManager searchManager, SourceRegistry sourceRegistry) {
         super(ApplicationCommandRequest.builder()
                 .name("play")
                 .description("Play a song")
@@ -40,13 +45,29 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                         .name("source")
                         .type(ApplicationCommandOption.Type.STRING.getValue())
                         .description("source to search from")
+                        .choices(sourcesAsChoices(sourceRegistry.getSourceList()))
                         .required(false)
-                        .autocomplete(true)
+                        .build())
+                .addOption(ApplicationCommandOptionData.builder()
+                        .name("seek")
+                        .type(ApplicationCommandOption.Type.BOOLEAN.getValue())
+                        .description("seeking to provided timestamp")
+                        .choices(ApplicationCommandOptionChoiceData.builder()
+                                    .name("Enable seeking")
+                                    .value("true")
+                                    .build(),
+                                    ApplicationCommandOptionChoiceData.builder()
+                                    .name("Disable seeking")
+                                    .value("false")
+                                    .build())
+                        .required(false)
                         .build())
                 .build());
-        this.sourceRegistry = sourceRegistry1;
+        this.sourceRegistry = sourceRegistry;
         completionManager = new CommandOptionCompletionManager();
-        completionManager.addOption("source", new CommandOptionCompletion(sourceRegistry.sourceSuggestionOptions()));
+        //TODO autocompletion for query. This should work by searching the index of query terms and returning the most popular ones
+        //TODO autocompletion for source IS NOT NEEDED. It is already handled by discord using choices
+        //completionManager.addOption("source", new CommandOptionCompletion(sourceRegistry.sourceSuggestionOptions()));
         this.searchManager = searchManager;
     }
 
@@ -60,23 +81,23 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                 .map(ApplicationCommandInteractionOptionValue::asString)
                 .orElseThrow();//TODO throw exception
 
-        String source = event.getInteraction().getCommandInteraction()
+        String sourceId = event.getInteraction().getCommandInteraction()
                 .flatMap(commandInteraction -> commandInteraction.getOption("source"))
                 .flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asString)
                 .orElse(null);
 
         return event.deferReply()
-                .then(handleQuery(event, query, source))
+                .then(handleQuery(event, query, sourceId))
                 .then();
     }
 
-    private Mono<Message> handleQuery(ChatInputInteractionEvent event, String query, String source) {
+    private Mono<Message> handleQuery(ChatInputInteractionEvent event, String query, String sourceId) {
         Mono<SearchResult> searchResultMono;
-        if(source==null) {
+        if(sourceId==null) {
             searchResultMono = searchManager.search(query);
         } else {
-            Optional<SearchSource> sourceOptional = sourceRegistry.getSource(source);
+            Optional<SearchSource> sourceOptional = sourceRegistry.getSource(sourceId);
             if(sourceOptional.isEmpty()) return event.editReply("Source not found");
             searchResultMono = searchManager.search(query, sourceOptional.get());
         }
@@ -107,6 +128,18 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
     @Override
     public Mono<Void> autoComplete(ChatInputAutoCompleteEvent event) {
         //TODO use scheduler
-        return completionManager.handleAutoCompletionEvent(event);//TODO redis may be used to perform searches
+        //return completionManager.handleAutoCompletionEvent(event);//TODO redis may be used to perform searches
+        return Mono.empty();
+    }
+
+    private static Collection<ImmutableApplicationCommandOptionChoiceData> sourcesAsChoices(List<SearchSource> sources) {
+        List<ImmutableApplicationCommandOptionChoiceData> choices = new ArrayList<>();
+        for (SearchSource source : sources) {
+            choices.add(ImmutableApplicationCommandOptionChoiceData.builder()
+                    .name(source.name())
+                    .value(source.identifier())
+                    .build());
+        }
+        return choices;
     }
 }
