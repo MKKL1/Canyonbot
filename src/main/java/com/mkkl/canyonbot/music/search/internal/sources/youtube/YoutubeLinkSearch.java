@@ -38,6 +38,12 @@ public class YoutubeLinkSearch implements SearchSource {
     public String identifier() {
         return "ytlink";
     }
+
+    @Override
+    public String logoUrl() {
+        return "https://static.vecteezy.com/system/resources/previews/024/983/592/original/youtube-logo-transparent-free-png.png";
+    }
+
     private String stripRoutePrefixes(String query) {
         if(query.startsWith(YoutubeMusicSearch.route))
             query = query.substring(YoutubeMusicSearch.route.length());
