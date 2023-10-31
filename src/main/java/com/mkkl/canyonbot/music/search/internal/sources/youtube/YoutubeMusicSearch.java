@@ -32,6 +32,6 @@ public class YoutubeMusicSearch implements SearchSource {
 
     @Override
     public String logoUrl() {
-        return YoutubeCommon.logoUrl;
+        return YoutubeCommon.musicLogoUrl;
     }
 }

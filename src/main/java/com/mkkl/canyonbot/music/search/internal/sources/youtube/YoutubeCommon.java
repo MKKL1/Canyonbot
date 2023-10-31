@@ -17,7 +17,9 @@ public class YoutubeCommon {
         return new YoutubeAudioSourceManager(true, null, null);
     }
 
+    //TODO should be configured from application.properties
     public static final String logoUrl = "https://cdn.discordapp.com/attachments/1168970395861397624/1168970843947286649/logo-youtube.png";
+    public static final String musicLogoUrl = "https://cdn.discordapp.com/attachments/1168970395861397624/1168982281029963856/Youtube_Music_icon.png";
 
     public static SearchResult searchFromRoute(YoutubeAudioSourceManager sourceManager,
                                                String route,

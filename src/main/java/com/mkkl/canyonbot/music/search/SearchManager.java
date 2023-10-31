@@ -1,5 +1,6 @@
 package com.mkkl.canyonbot.music.search;
 
+import com.mkkl.canyonbot.music.search.exceptions.NoMatchException;
 import com.mkkl.canyonbot.music.search.internal.sources.SearchSource;
 import com.sedmelluq.lava.common.tools.DaemonThreadFactory;
 import com.sedmelluq.lava.common.tools.ExecutorTools;
@@ -38,7 +39,7 @@ public class SearchManager {
             SearchResult item = sourceManager.search(query); //TODO replace repeating code
             if(!item.isEmpty()) return Mono.just(item);
         }
-        return Mono.error(new RuntimeException("No source manager found for query: " + query));
+        return Mono.error(new NoMatchException(query));
     }
 
     public Mono<SearchResult> search(String query) {

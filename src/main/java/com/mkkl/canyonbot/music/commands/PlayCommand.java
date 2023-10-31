@@ -3,10 +3,13 @@ package com.mkkl.canyonbot.music.commands;
 import com.mkkl.canyonbot.commands.AutoCompleteCommand;
 import com.mkkl.canyonbot.commands.BotCommand;
 import com.mkkl.canyonbot.commands.RegisterCommand;
-import com.mkkl.canyonbot.music.messages.TrackMessageBuilder;
+import com.mkkl.canyonbot.music.messages.AudioTrackMessage;
+import com.mkkl.canyonbot.music.messages.ErrorMessage;
+import com.mkkl.canyonbot.music.messages.ShortPlaylistMessage;
 import com.mkkl.canyonbot.music.search.SearchManager;
 import com.mkkl.canyonbot.music.search.SearchResult;
 import com.mkkl.canyonbot.music.search.SourceRegistry;
+import com.mkkl.canyonbot.music.search.exceptions.NoMatchException;
 import com.mkkl.canyonbot.music.search.internal.sources.SearchSource;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
@@ -16,7 +19,6 @@ import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.command.ApplicationCommandOption;
 import discord4j.core.object.entity.Message;
 import discord4j.core.spec.InteractionFollowupCreateSpec;
-import discord4j.core.spec.InteractionReplyEditSpec;
 import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
 import discord4j.discordjson.json.ApplicationCommandOptionData;
 import discord4j.discordjson.json.ApplicationCommandRequest;
@@ -110,30 +112,54 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                     Mono<Message> message = event.editReply("No match found");
                     if (searchResult.getPlaylists() != null && !searchResult.getPlaylists()
                             .isEmpty()) {
-                        message = event.editReply("Loaded playlist " + searchResult.getPlaylists()
-                                .getFirst()
-                                .getTracks()
-
-                                .stream()
-                                .limit(10)
-                                .map(audioTrack -> audioTrack.getInfo().title)
-                                .reduce("", (s, s2) -> s + "\n" + s2));
+                        //TODO not all tracks from playlist are loaded
+                        //TODO no title for playlist
+                        //TODO handle null on selected track
+                        message = event.createFollowup(InteractionFollowupCreateSpec.builder()
+                                .addEmbed(AudioTrackMessage.builder()
+                                        .setAudioTrack(searchResult.getPlaylists()
+                                                .getFirst()
+                                                .getSelectedTrack())
+                                        .setSource(searchResult.getSource())
+                                        .setQuery(query)
+                                        .setUser(event.getInteraction()
+                                                .getUser())
+                                        .build()
+                                        .getSpec())
+                                .addEmbed(ShortPlaylistMessage.builder()
+                                        .setPlaylist(searchResult.getPlaylists()
+                                                .getFirst())
+                                        .setSource(searchResult.getSource())
+                                        .setUser(event.getInteraction()
+                                                .getUser())
+                                        .build()
+                                        .getSpec())
+                                .build());
                     } else if (searchResult.getTracks() != null && !searchResult.getTracks()
                             .isEmpty()) {
                         AudioTrack track = searchResult.getTracks()
                                 .get(0);
                         message = event.createFollowup(InteractionFollowupCreateSpec.builder()
-                                .addEmbed(TrackMessageBuilder.create(track)
+                                .addEmbed(AudioTrackMessage.builder()
+                                        .setAudioTrack(track)
                                         .setSource(searchResult.getSource())
                                         .setQuery(query)
                                         .setUser(event.getInteraction()
                                                 .getUser())
-                                        .getSpecResponse())
+                                        .build()
+                                        .getSpec())
                                 .build());
                     }
 
                     return message;
                 })
+                //TODO add identifier to thrown errors so that full tracelog could be found easier in log files
+                .onErrorResume(throwable -> throwable instanceof NoMatchException,
+                        throwable -> event.createFollowup(InteractionFollowupCreateSpec.builder()
+                                .addEmbed(ErrorMessage.of(event.getInteraction()
+                                                .getUser(), (NoMatchException) throwable)
+                                        .getSpec())
+                                .build()))
                 .onErrorResume(throwable -> event.editReply("Error:" + throwable.getMessage())); //TODO log error, and send short message to user
     }
 
