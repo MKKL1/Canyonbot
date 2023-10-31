@@ -17,6 +17,8 @@ public class YoutubeCommon {
         return new YoutubeAudioSourceManager(true, null, null);
     }
 
+    public static final String logoUrl = "https://cdn.discordapp.com/attachments/1168970395861397624/1168970843947286649/logo-youtube.png";
+
     public static SearchResult searchFromRoute(YoutubeAudioSourceManager sourceManager,
                                                String route,
                                                String query,

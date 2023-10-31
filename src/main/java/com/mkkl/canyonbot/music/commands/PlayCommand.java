@@ -3,34 +3,26 @@ package com.mkkl.canyonbot.music.commands;
 import com.mkkl.canyonbot.commands.AutoCompleteCommand;
 import com.mkkl.canyonbot.commands.BotCommand;
 import com.mkkl.canyonbot.commands.RegisterCommand;
-import com.mkkl.canyonbot.commands.completion.CommandOptionCompletion;
-import com.mkkl.canyonbot.commands.completion.CommandOptionCompletionManager;
-import com.mkkl.canyonbot.music.messages.TrackMessage;
+import com.mkkl.canyonbot.music.messages.TrackMessageBuilder;
 import com.mkkl.canyonbot.music.search.SearchManager;
 import com.mkkl.canyonbot.music.search.SearchResult;
 import com.mkkl.canyonbot.music.search.SourceRegistry;
 import com.mkkl.canyonbot.music.search.internal.sources.SearchSource;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
-import com.sedmelluq.discord.lavaplayer.track.AudioTrackInfo;
 import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.command.ApplicationCommandOption;
 import discord4j.core.object.entity.Message;
-import discord4j.core.spec.EmbedCreateFields;
-import discord4j.core.spec.EmbedCreateSpec;
+import discord4j.core.spec.InteractionFollowupCreateSpec;
 import discord4j.core.spec.InteractionReplyEditSpec;
-import discord4j.core.spec.MessageCreateSpec;
 import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
 import discord4j.discordjson.json.ApplicationCommandOptionData;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import discord4j.discordjson.json.ImmutableApplicationCommandOptionChoiceData;
-import discord4j.rest.util.Color;
 import reactor.core.publisher.Mono;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -121,6 +113,7 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                         message = event.editReply("Loaded playlist " + searchResult.getPlaylists()
                                 .getFirst()
                                 .getTracks()
+
                                 .stream()
                                 .limit(10)
                                 .map(audioTrack -> audioTrack.getInfo().title)
@@ -129,8 +122,12 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                             .isEmpty()) {
                         AudioTrack track = searchResult.getTracks()
                                 .get(0);
-                        message = event.editReply(InteractionReplyEditSpec.builder()
-                                .addEmbed(TrackMessage.create(track, searchResult.getSource())
+                        message = event.createFollowup(InteractionFollowupCreateSpec.builder()
+                                .addEmbed(TrackMessageBuilder.create(track)
+                                        .setSource(searchResult.getSource())
+                                        .setQuery(query)
+                                        .setUser(event.getInteraction()
+                                                .getUser())
                                         .getSpecResponse())
                                 .build());
                     }

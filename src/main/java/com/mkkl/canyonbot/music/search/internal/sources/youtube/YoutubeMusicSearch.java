@@ -32,6 +32,6 @@ public class YoutubeMusicSearch implements SearchSource {
 
     @Override
     public String logoUrl() {
-        return "https://static.vecteezy.com/system/resources/previews/024/983/592/original/youtube-logo-transparent-free-png.png";
+        return YoutubeCommon.logoUrl;
     }
 }
