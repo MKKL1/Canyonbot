@@ -3,6 +3,8 @@ package com.mkkl.canyonbot.music.messages;
 import com.mkkl.canyonbot.music.search.internal.sources.SearchSource;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
+import discord4j.core.object.component.ActionRow;
+import discord4j.core.object.component.Button;
 import discord4j.core.object.entity.User;
 import discord4j.core.spec.EmbedCreateSpec;
 import lombok.Builder;
@@ -34,5 +36,11 @@ public class ShortPlaylistMessage implements ResponseMessage {
 //        if (audioTrack.getInfo().artworkUrl != null) embedBuilder.image(audioTrack.getInfo().artworkUrl);
         embedBuilder.footer(user.getUsername(), user.getAvatarUrl());
         return embedBuilder.build();
+    }
+
+    public ActionRow getActionRow() {
+        Button playButton = Button.primary("play-playlist", "Play playlist");
+
+        return ActionRow.of(playButton);
     }
 }

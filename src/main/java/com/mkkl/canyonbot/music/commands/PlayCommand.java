@@ -115,6 +115,14 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                         //TODO not all tracks from playlist are loaded
                         //TODO no title for playlist
                         //TODO handle null on selected track
+                        ShortPlaylistMessage shortPlaylistMessage = ShortPlaylistMessage.builder()
+                                .setPlaylist(searchResult.getPlaylists()
+                                        .getFirst())
+                                .setSource(searchResult.getSource())
+                                .setUser(event.getInteraction()
+                                        .getUser())
+                                .build();
+
                         message = event.createFollowup(InteractionFollowupCreateSpec.builder()
                                 .addEmbed(AudioTrackMessage.builder()
                                         .setAudioTrack(searchResult.getPlaylists()
@@ -126,14 +134,8 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                                                 .getUser())
                                         .build()
                                         .getSpec())
-                                .addEmbed(ShortPlaylistMessage.builder()
-                                        .setPlaylist(searchResult.getPlaylists()
-                                                .getFirst())
-                                        .setSource(searchResult.getSource())
-                                        .setUser(event.getInteraction()
-                                                .getUser())
-                                        .build()
-                                        .getSpec())
+                                .addEmbed(shortPlaylistMessage.getSpec())
+                                .addComponent(shortPlaylistMessage.getActionRow())
                                 .build());
                     } else if (searchResult.getTracks() != null && !searchResult.getTracks()
                             .isEmpty()) {
