@@ -1,14 +1,19 @@
 package com.mkkl.canyonbot.music.messages;
 
+import com.mkkl.canyonbot.interaction.TempListenableButton;
 import com.mkkl.canyonbot.music.search.internal.sources.SearchSource;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
+import discord4j.core.DiscordClient;
+import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
 import discord4j.core.object.entity.User;
 import discord4j.core.spec.EmbedCreateSpec;
+import discord4j.core.spec.InteractionCallbackSpec;
 import lombok.Builder;
 import lombok.Getter;
+import reactor.core.publisher.Mono;
 
 import java.time.Instant;
 
@@ -38,9 +43,24 @@ public class ShortPlaylistMessage implements ResponseMessage {
         return embedBuilder.build();
     }
 
-    public ActionRow getActionRow() {
+    public ActionRow getActionRow(DiscordClient client) {
         Button playButton = Button.primary("play-playlist", "Play playlist");
-
+        //TODO subscribing here is weird
+        new PlayPlaylistButton(playButton).register(client, SearchResponseConst.BUTTON_TIMEOUT).subscribe();
         return ActionRow.of(playButton);
+    }
+
+    private class PlayPlaylistButton extends TempListenableButton {
+
+        public PlayPlaylistButton(Button button) {
+            super(button);
+        }
+
+        @Override
+        public Mono<Void> onButtonPress(ButtonInteractionEvent event) {
+            //TODO load playlist to queue
+            //TODO and maybe add some permission check
+            return event.reply("Loaded playlist " + playlist.getName());
+        }
     }
 }

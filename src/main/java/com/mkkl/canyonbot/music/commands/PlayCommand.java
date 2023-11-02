@@ -12,6 +12,7 @@ import com.mkkl.canyonbot.music.search.SourceRegistry;
 import com.mkkl.canyonbot.music.search.exceptions.NoMatchException;
 import com.mkkl.canyonbot.music.search.internal.sources.SearchSource;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
+import discord4j.core.DiscordClient;
 import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
@@ -34,9 +35,10 @@ import java.util.Optional;
 public class PlayCommand extends BotCommand implements AutoCompleteCommand {
     private final SearchManager searchManager;
     private final SourceRegistry sourceRegistry;
+    private final DiscordClient client;
 
     //private CommandOptionCompletionManager completionManager;
-    public PlayCommand(SearchManager searchManager, SourceRegistry sourceRegistry) {
+    public PlayCommand(SearchManager searchManager, SourceRegistry sourceRegistry, DiscordClient client) {
         super(ApplicationCommandRequest.builder()
                 .name("play")
                 .description("Play a song")
@@ -74,6 +76,7 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
         //TODO autocompletion for query. This should work by searching the index of query terms and returning the most popular ones
         //TODO autocompletion for source IS NOT NEEDED. It is already handled by discord using choices
         //completionManager.addOption("source", new CommandOptionCompletion(sourceRegistry.sourceSuggestionOptions()));
+        this.client = client;
     }
 
     @Override
@@ -135,7 +138,7 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                                         .build()
                                         .getSpec())
                                 .addEmbed(shortPlaylistMessage.getSpec())
-                                .addComponent(shortPlaylistMessage.getActionRow())
+                                .addComponent(shortPlaylistMessage.getActionRow(client))
                                 .build());
                     } else if (searchResult.getTracks() != null && !searchResult.getTracks()
                             .isEmpty()) {
