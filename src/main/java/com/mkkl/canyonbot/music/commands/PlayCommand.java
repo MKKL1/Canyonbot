@@ -118,6 +118,7 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                         //TODO not all tracks from playlist are loaded
                         //TODO no title for playlist
                         //TODO handle null on selected track
+                        //TODO this way of building message is too complicated and not clear, it should be refactored
                         ShortPlaylistMessage shortPlaylistMessage = ShortPlaylistMessage.builder()
                                 .setPlaylist(searchResult.getPlaylists()
                                         .getFirst())

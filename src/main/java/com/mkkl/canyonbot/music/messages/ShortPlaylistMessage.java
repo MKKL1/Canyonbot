@@ -43,6 +43,7 @@ public class ShortPlaylistMessage implements ResponseMessage {
         return embedBuilder.build();
     }
 
+    //TODO remove button used to play playlist after it has been clicked
     public ActionRow getActionRow(DiscordClient client) {
         Button playButton = Button.primary("play-playlist", "Play playlist");
         //TODO subscribing here is weird

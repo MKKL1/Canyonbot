@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
+import java.util.concurrent.Callable;
 import java.util.concurrent.TimeoutException;
 
 @Getter
@@ -24,9 +25,11 @@ public abstract class TempListenableButton {
 
     public abstract Mono<Void> onButtonPress(ButtonInteractionEvent event);
 
+    //TODO when button is disabled there is no reason to receive events from it
     public Mono<Void> register(DiscordClient client, Duration duration) {
         return client.withGateway(gateway -> gateway.on(ButtonInteractionEvent.class, event -> {
                     if (event.getCustomId().equals(id)) {
+                        if(button.isDisabled()) return Mono.empty();
                         return onButtonPress(event);
                     }
                     return Mono.empty();
