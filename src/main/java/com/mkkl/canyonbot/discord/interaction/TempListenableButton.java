@@ -1,4 +1,4 @@
-package com.mkkl.canyonbot.interaction;
+package com.mkkl.canyonbot.discord.interaction;
 
 import discord4j.core.DiscordClient;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
