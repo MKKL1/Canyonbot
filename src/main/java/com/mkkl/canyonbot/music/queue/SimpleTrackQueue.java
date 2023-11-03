@@ -2,87 +2,93 @@ package com.mkkl.canyonbot.music.queue;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.PriorityQueue;
+import java.util.Queue;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
+//Just a simple LinkedBlockingQueue adapter
 public class SimpleTrackQueue implements TrackQueue<TrackQueueElement> {
+
+    private final Queue<TrackQueueElement> queue = new LinkedBlockingQueue<>();
 
     @Override
     public boolean enqueue(TrackQueueElement track) {
-
-        return false;
+        return queue.add(track);
     }
 
     @Override
     public TrackQueueElement dequeue() {
-        return null;
+        return queue.poll();
     }
 
     @Override
     public int size() {
-        return 0;
+        return queue.size();
     }
 
     @Override
     public boolean isEmpty() {
-        return false;
+        return queue.isEmpty();
     }
 
     @Override
     public boolean contains(Object o) {
-        return false;
+        return queue.contains(o);
     }
 
     @Override
     public Iterator<TrackQueueElement> iterator() {
-        return null;
+        return queue.iterator();
     }
 
     @Override
     public Object[] toArray() {
-        return new Object[0];
+        return queue.toArray();
     }
 
     @Override
     public <T> T[] toArray(T[] a) {
-        return null;
+        return queue.toArray(a);
     }
 
     @Override
     public boolean remove(Object o) {
-        return false;
+        return queue.remove(o);
     }
 
     @Override
     public boolean containsAll(Collection<?> c) {
-        return false;
+        return queue.containsAll(c);
     }
 
     @Override
     public boolean addAll(Collection<? extends TrackQueueElement> c) {
-        return false;
+        return queue.addAll(c);
     }
 
     @Override
     public boolean removeAll(Collection<?> c) {
-        return false;
+        return queue.removeAll(c);
     }
 
     @Override
     public boolean retainAll(Collection<?> c) {
-        return false;
+        return queue.retainAll(c);
     }
 
     @Override
     public void clear() {
-
+        queue.clear();
     }
 
     @Override
     public boolean equals(Object o) {
-        return false;
+        return queue.equals(o);
     }
 
     @Override
     public int hashCode() {
-        return 0;
+        return queue.hashCode();
     }
 }

@@ -1,6 +1,6 @@
 package com.mkkl.canyonbot.music.search;
 
-import com.mkkl.canyonbot.music.search.exceptions.NoMatchException;
+import com.mkkl.canyonbot.music.exceptions.NoMatchException;
 import com.mkkl.canyonbot.music.search.internal.sources.SearchSource;
 import com.sedmelluq.lava.common.tools.DaemonThreadFactory;
 import com.sedmelluq.lava.common.tools.ExecutorTools;

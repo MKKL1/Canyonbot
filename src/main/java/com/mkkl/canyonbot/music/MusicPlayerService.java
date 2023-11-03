@@ -14,11 +14,13 @@ import org.springframework.stereotype.Service;
 @Service
 public class MusicPlayerService {
 
+    //TODO there should be separate MusicPlayer for each guild
     @Bean
     public MusicPlayer musicPlayer(AudioPlayer audioPlayer) {
         return new LavaPlayer(audioPlayer);
     }
 
+    //TODO everything below should be internal
     @Bean
     public AudioPlayer audioPlayer(AudioPlayerManager playerManager) {
         return playerManager.createPlayer();

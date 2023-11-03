@@ -1,6 +1,6 @@
 package com.mkkl.canyonbot.music.messages;
 
-import com.mkkl.canyonbot.music.search.exceptions.ResponseMessageText;
+import com.mkkl.canyonbot.music.exceptions.ResponseMessageText;
 import discord4j.core.object.entity.User;
 import discord4j.core.spec.EmbedCreateSpec;
 

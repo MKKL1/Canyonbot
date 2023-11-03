@@ -9,7 +9,7 @@ import com.mkkl.canyonbot.music.messages.ShortPlaylistMessage;
 import com.mkkl.canyonbot.music.search.SearchManager;
 import com.mkkl.canyonbot.music.search.SearchResult;
 import com.mkkl.canyonbot.music.search.SourceRegistry;
-import com.mkkl.canyonbot.music.search.exceptions.NoMatchException;
+import com.mkkl.canyonbot.music.exceptions.NoMatchException;
 import com.mkkl.canyonbot.music.search.internal.sources.SearchSource;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import discord4j.core.DiscordClient;
