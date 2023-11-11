@@ -1,4 +1,4 @@
-package com.mkkl.canyonbot.music.queue;
+package com.mkkl.canyonbot.music.player.queue;
 
 import java.util.Collection;
 

@@ -1,4 +1,4 @@
-package com.mkkl.canyonbot.music.queue;
+package com.mkkl.canyonbot.music.player.queue;
 
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import discord4j.core.object.entity.User;

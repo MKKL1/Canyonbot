@@ -1,4 +1,4 @@
-package com.mkkl.canyonbot.music.player;
+package com.mkkl.canyonbot.music.player.lavaplayer;
 
 import com.sedmelluq.discord.lavaplayer.format.StandardAudioDataFormats;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;

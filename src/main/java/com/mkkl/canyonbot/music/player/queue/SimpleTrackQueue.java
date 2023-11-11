@@ -1,10 +1,8 @@
-package com.mkkl.canyonbot.music.queue;
+package com.mkkl.canyonbot.music.player.queue;
 
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.PriorityQueue;
 import java.util.Queue;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 //Just a simple LinkedBlockingQueue adapter

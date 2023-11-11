@@ -1,14 +1,29 @@
-package com.mkkl.canyonbot.music.player;
+package com.mkkl.canyonbot.music.player.lavaplayer;
 
+import com.mkkl.canyonbot.music.player.MusicPlayer;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
+import com.sedmelluq.discord.lavaplayer.player.event.AudioEvent;
+import com.sedmelluq.discord.lavaplayer.player.event.AudioEventListener;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
+import discord4j.voice.AudioProvider;
+import reactor.core.publisher.DirectProcessor;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
+import reactor.core.publisher.Sinks;
 
-public class LavaPlayer implements MusicPlayer{
+public class LavaPlayer implements MusicPlayer {
 
     private final AudioPlayer audioPlayer;
+    private Flux<AudioEvent> eventFlux;
 
     public LavaPlayer(AudioPlayer audioPlayer) {
         this.audioPlayer = audioPlayer;
+        eventFlux = Flux.create(sink -> audioPlayer.addListener(sink::next));
+    }
+
+    @Override
+    public AudioProvider getAudioProvider() {
+        return new LavaPlayerAudioProvider(audioPlayer);
     }
 
     @Override
@@ -58,5 +73,20 @@ public class LavaPlayer implements MusicPlayer{
     @Override
     public int getVolume() {
         return audioPlayer.getVolume();
+    }
+
+    @Override
+    public Flux<AudioEvent> getEventFlux() {
+        return eventFlux;
+    }
+
+    @Override
+    public void addListener(AudioEventListener listener) {
+        audioPlayer.addListener(listener);
+    }
+
+    @Override
+    public void removeListener(AudioEventListener listener) {
+        audioPlayer.removeListener(listener);
     }
 }
