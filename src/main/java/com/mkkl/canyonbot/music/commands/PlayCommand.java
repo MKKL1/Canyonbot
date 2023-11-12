@@ -3,9 +3,11 @@ package com.mkkl.canyonbot.music.commands;
 import com.mkkl.canyonbot.commands.AutoCompleteCommand;
 import com.mkkl.canyonbot.commands.BotCommand;
 import com.mkkl.canyonbot.commands.RegisterCommand;
+import com.mkkl.canyonbot.music.MusicPlayerManager;
 import com.mkkl.canyonbot.music.messages.AudioTrackMessage;
 import com.mkkl.canyonbot.music.messages.ErrorMessage;
 import com.mkkl.canyonbot.music.messages.ShortPlaylistMessage;
+import com.mkkl.canyonbot.music.player.queue.TrackQueueElement;
 import com.mkkl.canyonbot.music.search.SearchManager;
 import com.mkkl.canyonbot.music.search.SearchResult;
 import com.mkkl.canyonbot.music.search.SourceRegistry;
@@ -36,9 +38,10 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
     private final SearchManager searchManager;
     private final SourceRegistry sourceRegistry;
     private final DiscordClient client;
+    private final MusicPlayerManager musicPlayerManager;
 
     //private CommandOptionCompletionManager completionManager;
-    public PlayCommand(SearchManager searchManager, SourceRegistry sourceRegistry, DiscordClient client) {
+    public PlayCommand(SearchManager searchManager, SourceRegistry sourceRegistry, DiscordClient client, MusicPlayerManager musicPlayerManager) {
         super(ApplicationCommandRequest.builder()
                 .name("play")
                 .description("Play a song")
@@ -77,6 +80,7 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
         //TODO autocompletion for source IS NOT NEEDED. It is already handled by discord using choices
         //completionManager.addOption("source", new CommandOptionCompletion(sourceRegistry.sourceSuggestionOptions()));
         this.client = client;
+        this.musicPlayerManager = musicPlayerManager;
     }
 
     @Override
@@ -141,20 +145,24 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                                 .addEmbed(shortPlaylistMessage.getSpec())
                                 .addComponent(shortPlaylistMessage.getActionRow(client))
                                 .build());
+
+
                     } else if (searchResult.getTracks() != null && !searchResult.getTracks()
                             .isEmpty()) {
                         AudioTrack track = searchResult.getTracks()
                                 .get(0);
                         message = event.createFollowup(InteractionFollowupCreateSpec.builder()
-                                .addEmbed(AudioTrackMessage.builder()
-                                        .setAudioTrack(track)
-                                        .setSource(searchResult.getSource())
-                                        .setQuery(query)
-                                        .setUser(event.getInteraction()
-                                                .getUser())
-                                        .build()
-                                        .getSpec())
-                                .build());
+                                        .addEmbed(AudioTrackMessage.builder()
+                                                .setAudioTrack(track)
+                                                .setSource(searchResult.getSource())
+                                                .setQuery(query)
+                                                .setUser(event.getInteraction()
+                                                        .getUser())
+                                                .build()
+                                                .getSpec())
+                                        .build())
+                                .then(Mono.fromRunnable(() -> musicPlayerManager.getOrCreatePlayer(event.getInteraction().getGuild().block())
+                                        .enqueueAndJoin(new TrackQueueElement(track, event.getInteraction().getUser()), )));
                     }
 
                     return message;

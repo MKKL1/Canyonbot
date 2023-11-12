@@ -1,5 +1,7 @@
 package com.mkkl.canyonbot.music.player.queue;
 
+import jakarta.annotation.Nullable;
+
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Queue;
@@ -15,6 +17,7 @@ public class SimpleTrackQueue implements TrackQueue<TrackQueueElement> {
         return queue.add(track);
     }
 
+    @Nullable
     @Override
     public TrackQueueElement dequeue() {
         return queue.poll();
