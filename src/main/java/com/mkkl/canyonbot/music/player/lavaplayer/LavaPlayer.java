@@ -1,29 +1,31 @@
 package com.mkkl.canyonbot.music.player.lavaplayer;
 
 import com.mkkl.canyonbot.music.player.MusicPlayer;
+import com.mkkl.canyonbot.music.player.event.MusicPlayerEvent;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
-import com.sedmelluq.discord.lavaplayer.player.event.AudioEvent;
-import com.sedmelluq.discord.lavaplayer.player.event.AudioEventListener;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import discord4j.voice.AudioProvider;
-import reactor.core.publisher.DirectProcessor;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.FluxSink;
-import reactor.core.publisher.Sinks;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 
 public class LavaPlayer implements MusicPlayer {
 
     private final AudioPlayer audioPlayer;
-    private Flux<AudioEvent> eventFlux;
+    private final Flux<MusicPlayerEvent> eventFlux;
+    private final LavaPlayerAudioProvider audioProvider;
+    private static final Scheduler scheduler = Schedulers.boundedElastic();
 
     public LavaPlayer(AudioPlayer audioPlayer) {
         this.audioPlayer = audioPlayer;
-        eventFlux = Flux.create(sink -> audioPlayer.addListener(sink::next));
+        eventFlux = Flux.create(sink -> audioPlayer.addListener(new LavaPlayerEventAdapter(LavaPlayer.this, sink)));
+        audioProvider = new LavaPlayerAudioProvider(audioPlayer);
+
     }
 
     @Override
     public AudioProvider getAudioProvider() {
-        return new LavaPlayerAudioProvider(audioPlayer);
+        return audioProvider;
     }
 
     @Override
@@ -76,17 +78,8 @@ public class LavaPlayer implements MusicPlayer {
     }
 
     @Override
-    public Flux<AudioEvent> getEventFlux() {
-        return eventFlux;
+    public <E extends MusicPlayerEvent> Flux<E> on(Class<E> clazz) {
+        return eventFlux.publishOn(scheduler).ofType(clazz);
     }
 
-    @Override
-    public void addListener(AudioEventListener listener) {
-        audioPlayer.addListener(listener);
-    }
-
-    @Override
-    public void removeListener(AudioEventListener listener) {
-        audioPlayer.removeListener(listener);
-    }
 }

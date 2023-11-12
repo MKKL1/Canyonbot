@@ -1,11 +1,8 @@
 package com.mkkl.canyonbot.music.player;
 
-import com.sedmelluq.discord.lavaplayer.player.event.AudioEvent;
-import com.sedmelluq.discord.lavaplayer.player.event.AudioEventListener;
+import com.mkkl.canyonbot.music.player.event.MusicPlayerEvent;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
-import discord4j.core.object.entity.Guild;
 import discord4j.voice.AudioProvider;
-import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
 public interface MusicPlayer {
@@ -27,11 +24,5 @@ public interface MusicPlayer {
     void setVolume(int volume);
 
     int getVolume();
-
-    Flux<AudioEvent> getEventFlux();
-
-    //TODO: events using reactor
-    void addListener(AudioEventListener listener);
-
-    void removeListener(AudioEventListener listener);
+    <E extends MusicPlayerEvent> Flux<E> on(Class<E> clazz);
 }
