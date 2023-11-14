@@ -5,8 +5,9 @@ import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import discord4j.voice.AudioProvider;
 import reactor.core.publisher.Flux;
 
-public interface MusicPlayer {
-    AudioProvider getAudioProvider();
+//Interface for most basic music player functionality (without queue, voice channel management, etc.)
+public interface MusicPlayerBase {
+    AudioProvider createAudioProvider();
     AudioTrack getPlayingTrack();
 
     void playTrack(AudioTrack track);
@@ -24,5 +25,4 @@ public interface MusicPlayer {
     void setVolume(int volume);
 
     int getVolume();
-    <E extends MusicPlayerEvent> Flux<E> on(Class<E> clazz);
 }

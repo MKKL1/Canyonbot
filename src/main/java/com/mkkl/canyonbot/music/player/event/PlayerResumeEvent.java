@@ -1,9 +1,9 @@
 package com.mkkl.canyonbot.music.player.event;
 
-import com.mkkl.canyonbot.music.player.MusicPlayer;
+import com.mkkl.canyonbot.music.player.MusicPlayerBase;
 
 public class PlayerResumeEvent extends MusicPlayerEvent{
-    public PlayerResumeEvent(MusicPlayer musicPlayer) {
-        super(musicPlayer);
+    public PlayerResumeEvent(MusicPlayerBase musicPlayerBase) {
+        super(musicPlayerBase);
     }
 }

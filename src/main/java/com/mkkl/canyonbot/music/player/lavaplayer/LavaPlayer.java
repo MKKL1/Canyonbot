@@ -1,6 +1,6 @@
 package com.mkkl.canyonbot.music.player.lavaplayer;
 
-import com.mkkl.canyonbot.music.player.MusicPlayer;
+import com.mkkl.canyonbot.music.player.MusicPlayerBase;
 import com.mkkl.canyonbot.music.player.event.MusicPlayerEvent;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
@@ -9,7 +9,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
-public class LavaPlayer implements MusicPlayer {
+public class LavaPlayer implements MusicPlayerBase {
 
     private final AudioPlayer audioPlayer;
     private final Flux<MusicPlayerEvent> eventFlux;
@@ -18,13 +18,14 @@ public class LavaPlayer implements MusicPlayer {
 
     public LavaPlayer(AudioPlayer audioPlayer) {
         this.audioPlayer = audioPlayer;
+        //TODO provide FluxSink with events from LavaPlayer using some kind of necessary list of events
         eventFlux = Flux.create(sink -> audioPlayer.addListener(new LavaPlayerEventAdapter(LavaPlayer.this, sink)));
         audioProvider = new LavaPlayerAudioProvider(audioPlayer);
 
     }
 
     @Override
-    public AudioProvider getAudioProvider() {
+    public AudioProvider createAudioProvider() {
         return audioProvider;
     }
 
@@ -77,7 +78,6 @@ public class LavaPlayer implements MusicPlayer {
         return audioPlayer.getVolume();
     }
 
-    @Override
     public <E extends MusicPlayerEvent> Flux<E> on(Class<E> clazz) {
         return eventFlux.publishOn(scheduler).ofType(clazz);
     }

@@ -1,45 +1,45 @@
 package com.mkkl.canyonbot.music.player.queue;
 
-import com.mkkl.canyonbot.music.player.MusicPlayer;
+import com.mkkl.canyonbot.music.player.MusicPlayerBase;
 import com.mkkl.canyonbot.music.player.event.TrackEndEvent;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
 import reactor.core.publisher.Mono;
 
 public class TrackScheduler {
     private final TrackQueue<TrackQueueElement> queue;
-    private final MusicPlayer musicPlayer;
-    public TrackScheduler(TrackQueue<TrackQueueElement> queue, MusicPlayer musicPlayer) {
+    private final MusicPlayerBase musicPlayerBase;
+    public TrackScheduler(TrackQueue<TrackQueueElement> queue, MusicPlayerBase musicPlayerBase) {
         this.queue = queue;
-        musicPlayer.on(TrackEndEvent.class).flatMap(trackEndEvent -> {
-            if (trackEndEvent.getEndReason() == AudioTrackEndReason.FINISHED) {
-                return Mono.fromRunnable(() -> {
-                    TrackQueueElement track = this.queue.dequeue();
-                    if (track != null)
-                        musicPlayer.playTrack(track.getAudioTrack());
-                    else leaveChannel();
-                });
-            }
-            return Mono.fromRunnable(this::leaveChannel);
-        }).subscribe();
-        this.musicPlayer = musicPlayer;
+//        musicPlayerBase.on(TrackEndEvent.class).flatMap(trackEndEvent -> {
+//            if (trackEndEvent.getEndReason() == AudioTrackEndReason.FINISHED) {
+//                return Mono.fromRunnable(() -> {
+//                    TrackQueueElement track = this.queue.dequeue();
+//                    if (track != null)
+//                        musicPlayerBase.playTrack(track.getAudioTrack());
+//                    else leaveChannel();
+//                });
+//            }
+//            return Mono.fromRunnable(this::leaveChannel);
+//        }).subscribe();
+        this.musicPlayerBase = musicPlayerBase;
     }
 
     public Mono<Void> start() {
-        if(musicPlayer.getPlayingTrack() != null) return Mono.empty();
+        if(musicPlayerBase.getPlayingTrack() != null) return Mono.empty();
         return Mono.fromRunnable(() -> {
             TrackQueueElement track = queue.dequeue();
             if (track != null)
-                musicPlayer.playTrack(track.getAudioTrack());
+                musicPlayerBase.playTrack(track.getAudioTrack());
         });
     }
 
     public Mono<Void> skip() {
-        if(musicPlayer.getPlayingTrack() == null) return Mono.empty();
+        if(musicPlayerBase.getPlayingTrack() == null) return Mono.empty();
         return Mono.fromRunnable(() -> {
-            musicPlayer.stopTrack();
+            musicPlayerBase.stopTrack();
             TrackQueueElement track = queue.dequeue();
             if (track != null)
-                musicPlayer.playTrack(track.getAudioTrack());
+                musicPlayerBase.playTrack(track.getAudioTrack());
         });
     }
 

@@ -1,13 +1,12 @@
 package com.mkkl.canyonbot.music.player.event;
 
-import com.mkkl.canyonbot.music.player.MusicPlayer;
-import discord4j.core.object.entity.channel.VoiceChannel;
+import com.mkkl.canyonbot.music.player.MusicPlayerBase;
 import lombok.Getter;
 
 @Getter
 public abstract class MusicPlayerEvent {
-    private final MusicPlayer musicPlayer;
-    protected MusicPlayerEvent(MusicPlayer musicPlayer) {
-        this.musicPlayer = musicPlayer;
+    private final MusicPlayerBase musicPlayerBase;
+    protected MusicPlayerEvent(MusicPlayerBase musicPlayerBase) {
+        this.musicPlayerBase = musicPlayerBase;
     }
 }

@@ -2,7 +2,7 @@ package com.mkkl.canyonbot.music;
 
 import com.mkkl.canyonbot.music.player.GuildMusicBotManager;
 import com.mkkl.canyonbot.music.player.lavaplayer.LavaPlayer;
-import com.mkkl.canyonbot.music.player.MusicPlayer;
+import com.mkkl.canyonbot.music.player.MusicPlayerBase;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.source.AudioSourceManagers;
@@ -23,8 +23,8 @@ public class MusicPlayerManager {
 
     public GuildMusicBotManager getOrCreatePlayer(Guild guild) {
         return playerPool.computeIfAbsent(guild, _guild -> {
-            MusicPlayer musicPlayer = new LavaPlayer(audioPlayerManager.createPlayer());
-            return GuildMusicBotManager.create(_guild, musicPlayer, musicPlayer.getAudioProvider());
+            MusicPlayerBase musicPlayerBase = new LavaPlayer(audioPlayerManager.createPlayer());
+            return GuildMusicBotManager.create(_guild, musicPlayerBase, musicPlayerBase.createAudioProvider());
         });
     }
 

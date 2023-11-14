@@ -1,6 +1,6 @@
 package com.mkkl.canyonbot.music.player.event;
 
-import com.mkkl.canyonbot.music.player.MusicPlayer;
+import com.mkkl.canyonbot.music.player.MusicPlayerBase;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
 import lombok.Getter;
@@ -9,8 +9,8 @@ import lombok.Getter;
 public class TrackEndEvent extends MusicPlayerEvent{
     private final AudioTrack track;
     private final AudioTrackEndReason endReason;
-    public TrackEndEvent(MusicPlayer musicPlayer, AudioTrack track, AudioTrackEndReason endReason) {
-        super(musicPlayer);
+    public TrackEndEvent(MusicPlayerBase musicPlayerBase, AudioTrack track, AudioTrackEndReason endReason) {
+        super(musicPlayerBase);
         this.track = track;
         this.endReason = endReason;
     }
