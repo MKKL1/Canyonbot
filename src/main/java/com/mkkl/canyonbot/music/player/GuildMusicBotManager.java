@@ -11,25 +11,29 @@ import discord4j.voice.AudioProvider;
 import discord4j.voice.VoiceConnection;
 import jakarta.annotation.Nullable;
 import lombok.Getter;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-
+//TODO use spring with proper context
 public class GuildMusicBotManager {
     private final MusicPlayerBase player;
+    private final AudioProvider audioProvider;
     @Getter
     private final Guild guild;
-    private final AudioProvider audioProvider;
     private final TrackQueue<TrackQueueElement> trackQueue = new SimpleTrackQueue();
     @Nullable
     private VoiceConnection voiceConnection = null;
     @Getter
     private final TrackScheduler trackScheduler;
+    @Getter
+    private final MusicBotEventDispatcher eventDispatcher;
 
     private GuildMusicBotManager(MusicPlayerBase player, Guild guild, AudioProvider audioProvider) {
         this.player = player;
         this.guild = guild;
         this.audioProvider = audioProvider;
-        this.trackScheduler = new TrackScheduler(trackQueue, player);
+        this.eventDispatcher = MusicBotEventDispatcher.create(Flux.create(player::registerEvents));
+        this.trackScheduler = new TrackScheduler(trackQueue, player, eventDispatcher);
     }
 
     public static GuildMusicBotManager create(Guild guild, MusicPlayerBase musicPlayerBase, AudioProvider audioProvider) {
@@ -48,23 +52,6 @@ public class GuildMusicBotManager {
         if(!checkConnection()) return Mono.error(new IllegalStateException("Not connected to a voice channel"));
         return voiceConnection.disconnect();
     }
-
-    //TODO this should be moved to TrackScheduler
-//    public Mono<Void> playInstant(TrackQueueElement track) {
-//        if(!checkConnection()) return Mono.error(new IllegalStateException("Not connected to a voice channel"));
-//        return Mono.fromRunnable(() -> {
-//            trackQueue.enqueue(track);
-//            if(player.getPlayingTrack() == null) {
-//                trackScheduler.nextTrack();
-//            }
-//        });
-//    }
-//    public Mono<Void> skip() {
-//        return trackScheduler.skip();
-//    }
-//    public Mono<Void> stop() {
-//        return Mono.empty();//TODO
-//    }
 
     public boolean unused() {
         return trackQueue.isEmpty() && player.getPlayingTrack() == null;

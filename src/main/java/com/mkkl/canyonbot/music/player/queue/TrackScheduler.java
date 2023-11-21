@@ -1,5 +1,6 @@
 package com.mkkl.canyonbot.music.player.queue;
 
+import com.mkkl.canyonbot.music.player.MusicBotEventDispatcher;
 import com.mkkl.canyonbot.music.player.MusicPlayerBase;
 import com.mkkl.canyonbot.music.player.event.TrackEndEvent;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
@@ -8,19 +9,20 @@ import reactor.core.publisher.Mono;
 public class TrackScheduler {
     private final TrackQueue<TrackQueueElement> queue;
     private final MusicPlayerBase musicPlayerBase;
-    public TrackScheduler(TrackQueue<TrackQueueElement> queue, MusicPlayerBase musicPlayerBase) {
+    //Use create
+    public TrackScheduler(TrackQueue<TrackQueueElement> queue, MusicPlayerBase musicPlayerBase, MusicBotEventDispatcher musicBotEventDispatcher) {
         this.queue = queue;
-//        musicPlayerBase.on(TrackEndEvent.class).flatMap(trackEndEvent -> {
-//            if (trackEndEvent.getEndReason() == AudioTrackEndReason.FINISHED) {
-//                return Mono.fromRunnable(() -> {
-//                    TrackQueueElement track = this.queue.dequeue();
-//                    if (track != null)
-//                        musicPlayerBase.playTrack(track.getAudioTrack());
-//                    else leaveChannel();
-//                });
-//            }
-//            return Mono.fromRunnable(this::leaveChannel);
-//        }).subscribe();
+        musicBotEventDispatcher.on(TrackEndEvent.class).flatMap(trackEndEvent -> {
+            if (trackEndEvent.getEndReason() == AudioTrackEndReason.FINISHED) {
+                return Mono.fromRunnable(() -> {
+                    TrackQueueElement track = this.queue.dequeue();
+                    if (track != null)
+                        musicPlayerBase.playTrack(track.getAudioTrack());
+                    else leaveChannel();
+                });
+            }
+            return Mono.fromRunnable(this::leaveChannel);
+        }).subscribe();
         this.musicPlayerBase = musicPlayerBase;
     }
 
