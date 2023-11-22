@@ -37,7 +37,8 @@ public class GuildMusicBotManager {
         this.player = player;
         this.guild = guild;
         this.audioProvider = audioProvider;
-        this.eventDispatcher = MusicBotEventDispatcher.create(Flux.create(player::registerEvents));
+        this.eventDispatcher = MusicBotEventDispatcher.create();
+        this.player.registerEvents(this, eventDispatcher);
         this.trackScheduler = new TrackScheduler(trackQueue, player, eventDispatcher, this);
     }
 

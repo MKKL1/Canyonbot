@@ -1,6 +1,9 @@
 package com.mkkl.canyonbot.music.player.lavaplayer;
 
+import com.mkkl.canyonbot.music.player.GuildMusicBotManager;
+import com.mkkl.canyonbot.music.player.MusicBotEventDispatcher;
 import com.mkkl.canyonbot.music.player.MusicPlayerBase;
+import com.mkkl.canyonbot.music.player.event.MusicPlayerEvent;
 import com.mkkl.canyonbot.music.player.event.base.*;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import com.sedmelluq.discord.lavaplayer.player.event.AudioEvent;
@@ -11,47 +14,47 @@ import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
 import reactor.core.publisher.FluxSink;
 
 public class LavaPlayerEventAdapter extends AudioEventAdapter {
-    private final MusicPlayerBase musicPlayerBase;
-    private final FluxSink<MusicPlayerEvent> sink;
-    public LavaPlayerEventAdapter(MusicPlayerBase musicPlayerBase, FluxSink<MusicPlayerEvent> sink) {
-        super();
-        this.musicPlayerBase = musicPlayerBase;
-        this.sink = sink;
+    private final GuildMusicBotManager guildMusicBotManager;
+    private final MusicBotEventDispatcher eventDispatcher;
+
+    public LavaPlayerEventAdapter(GuildMusicBotManager guildMusicBotManager, MusicBotEventDispatcher eventDispatcher) {
+        this.guildMusicBotManager = guildMusicBotManager;
+        this.eventDispatcher = eventDispatcher;
     }
 
     @Override
     public void onPlayerPause(AudioPlayer player) {
-        sink.next(new PlayerPauseEvent(musicPlayerBase));
+        eventDispatcher.publish(new PlayerPauseEvent(guildMusicBotManager));
     }
 
     @Override
     public void onPlayerResume(AudioPlayer player) {
-        sink.next(new PlayerResumeEvent(musicPlayerBase));
+        eventDispatcher.publish(new PlayerResumeEvent(guildMusicBotManager));
     }
 
     @Override
     public void onTrackStart(AudioPlayer player, AudioTrack track) {
-        sink.next(new TrackStartEvent(musicPlayerBase, track));
+        eventDispatcher.publish(new TrackStartEvent(guildMusicBotManager, track));
     }
 
     @Override
     public void onTrackEnd(AudioPlayer player, AudioTrack track, AudioTrackEndReason endReason) {
-        sink.next(new TrackEndEvent(musicPlayerBase, track, endReason));
+        eventDispatcher.publish(new TrackEndEvent(guildMusicBotManager, track, endReason));
     }
 
     @Override
     public void onTrackException(AudioPlayer player, AudioTrack track, FriendlyException exception) {
-        sink.next(new TrackExceptionEvent(musicPlayerBase, track, exception));
+        eventDispatcher.publish(new TrackExceptionEvent(guildMusicBotManager, track, exception));
     }
 
     @Override
     public void onTrackStuck(AudioPlayer player, AudioTrack track, long thresholdMs) {
-        sink.next(new TrackStuckEvent(musicPlayerBase, track, thresholdMs, null));
+        eventDispatcher.publish(new TrackStuckEvent(guildMusicBotManager, track, thresholdMs, null));
     }
 
     @Override
     public void onTrackStuck(AudioPlayer player, AudioTrack track, long thresholdMs, StackTraceElement[] stackTrace) {
-        sink.next(new TrackStuckEvent(musicPlayerBase, track, thresholdMs, stackTrace));
+        eventDispatcher.publish(new TrackStuckEvent(guildMusicBotManager, track, thresholdMs, stackTrace));
     }
 
     @Override

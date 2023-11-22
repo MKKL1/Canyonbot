@@ -4,6 +4,7 @@ import com.mkkl.canyonbot.music.player.GuildMusicBotManager;
 import com.mkkl.canyonbot.music.player.MusicBotEventDispatcher;
 import com.mkkl.canyonbot.music.player.MusicPlayerBase;
 import com.mkkl.canyonbot.music.player.event.base.TrackEndEvent;
+import com.mkkl.canyonbot.music.player.event.scheduler.QueueEmptyEvent;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
 import lombok.Getter;
 import reactor.core.publisher.Mono;
@@ -16,43 +17,57 @@ public class TrackScheduler {
 
     //Use create
     //Maybe even builder
-    public TrackScheduler(TrackQueue<TrackQueueElement> queue, MusicPlayerBase musicPlayerBase, MusicBotEventDispatcher musicBotEventDispatcher, GuildMusicBotManager guildMusicBotManager) {
+    public TrackScheduler(TrackQueue<TrackQueueElement> queue,
+                          MusicPlayerBase musicPlayerBase,
+                          MusicBotEventDispatcher musicBotEventDispatcher,
+                          GuildMusicBotManager guildMusicBotManager) {
         this.queue = queue;
         musicBotEventDispatcher.on(TrackEndEvent.class)
-                .flatMap(trackEndEvent -> {
-                    if (trackEndEvent.getEndReason() == AudioTrackEndReason.FINISHED) {
-                        return Mono.fromRunnable(() -> {
-                            TrackQueueElement track = this.queue.dequeue();
-                            if (track != null)
-                                musicPlayerBase.playTrack(track.getAudioTrack());
-                            else guildMusicBotManager.leave()
-                                    .block(); //TODO this is a bit hacky, better way would be to dispatch a PlayerEmptyEvent
-                        });
-                    }
-                    return guildMusicBotManager.leave();
-                })
+                .flatMap(trackEndEvent -> handleTrackEndEvent(trackEndEvent, guildMusicBotManager, queue, musicPlayerBase, musicBotEventDispatcher))
                 .subscribe();
         this.musicPlayerBase = musicPlayerBase;
     }
 
+    private static Mono<Void> handleTrackEndEvent(TrackEndEvent trackEndEvent, GuildMusicBotManager guildMusicBotManager, TrackQueue<TrackQueueElement> queue, MusicPlayerBase musicPlayerBase, MusicBotEventDispatcher musicBotEventDispatcher) {
+        if (trackEndEvent.getEndReason().mayStartNext) {
+            return Mono.fromRunnable(() -> {
+                TrackQueueElement track = queue.dequeue();
+                if (track != null)
+                    musicPlayerBase.playTrack(track.getAudioTrack());
+                else musicBotEventDispatcher.publish(new QueueEmptyEvent(guildMusicBotManager, queue));
+            });
+        }
+        return guildMusicBotManager.leave();//TODO event here as well
+    }
+
     public Mono<Void> start() {
-        if (musicPlayerBase.getPlayingTrack() != null) return Mono.empty();
+        if (state != State.STOPPED) return Mono.empty();//TODO return error
         return Mono.fromRunnable(() -> {
             TrackQueueElement track = queue.dequeue();
             if (track != null) {
                 musicPlayerBase.playTrack(track.getAudioTrack());
                 state = State.PLAYING;
+                //TODO start event
             }
+            //TODO return error
         });
     }
 
+    public Mono<Void> pause() {
+        return Mono.empty();
+    }
+    public Mono<Void> unpause() {
+        return Mono.empty();
+    }
+
     public Mono<Void> skip() {
-        if (musicPlayerBase.getPlayingTrack() == null) return Mono.empty();
+        if (musicPlayerBase.getPlayingTrack() == null) return Mono.empty();//TODO return error
         return Mono.fromRunnable(() -> {
             musicPlayerBase.stopTrack();
             TrackQueueElement track = queue.dequeue();
             if (track != null)
-                musicPlayerBase.playTrack(track.getAudioTrack());
+                musicPlayerBase.playTrack(track.getAudioTrack());//TODO skip event
+            //TODO return error
         });
     }
 

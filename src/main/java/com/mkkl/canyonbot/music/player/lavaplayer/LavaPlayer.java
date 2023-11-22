@@ -1,11 +1,11 @@
 package com.mkkl.canyonbot.music.player.lavaplayer;
 
+import com.mkkl.canyonbot.music.player.GuildMusicBotManager;
+import com.mkkl.canyonbot.music.player.MusicBotEventDispatcher;
 import com.mkkl.canyonbot.music.player.MusicPlayerBase;
-import com.mkkl.canyonbot.music.player.event.base.MusicPlayerEvent;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import discord4j.voice.AudioProvider;
-import reactor.core.publisher.FluxSink;
 
 public class LavaPlayer implements MusicPlayerBase {
 
@@ -28,8 +28,8 @@ public class LavaPlayer implements MusicPlayerBase {
     }
 
     @Override
-    public void registerEvents(FluxSink<MusicPlayerEvent> sink) {
-        audioPlayer.addListener(new LavaPlayerEventAdapter(this, sink));
+    public void registerEvents(GuildMusicBotManager guildMusicBotManager, MusicBotEventDispatcher eventDispatcher) {
+        audioPlayer.addListener(new LavaPlayerEventAdapter(guildMusicBotManager, eventDispatcher));
     }
 
     @Override

@@ -1,6 +1,6 @@
 package com.mkkl.canyonbot.music.player;
 
-import com.mkkl.canyonbot.music.player.event.base.MusicPlayerEvent;
+import com.mkkl.canyonbot.music.player.event.MusicPlayerEvent;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import discord4j.voice.AudioProvider;
 import reactor.core.publisher.FluxSink;
@@ -10,7 +10,7 @@ public interface MusicPlayerBase {
     AudioProvider createAudioProvider();
     AudioTrack getPlayingTrack();
 
-    void registerEvents(FluxSink<MusicPlayerEvent> sink);
+    void registerEvents(GuildMusicBotManager guildMusicBotManager, MusicBotEventDispatcher eventDispatcher);
 
     void playTrack(AudioTrack track);
 
