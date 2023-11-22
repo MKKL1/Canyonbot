@@ -76,6 +76,10 @@ public class LavaPlayer implements MusicPlayerBase {
         return audioPlayer.getVolume();
     }
 
+    @Override
+    public void destroy() {
+        audioPlayer.destroy();
+    }
 
 
 }

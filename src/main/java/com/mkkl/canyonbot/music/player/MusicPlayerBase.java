@@ -27,4 +27,6 @@ public interface MusicPlayerBase {
     void setVolume(int volume);
 
     int getVolume();
+
+    void destroy();
 }
