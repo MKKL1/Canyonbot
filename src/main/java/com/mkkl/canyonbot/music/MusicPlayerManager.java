@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class MusicPlayerManager {
@@ -28,8 +29,7 @@ public class MusicPlayerManager {
         });
     }
 
-    //TODO optional?
-    public GuildMusicBotManager getPlayer(Guild guild) {
-        return playerPool.get(guild);
+    public Optional<GuildMusicBotManager> getPlayer(Guild guild) {
+        return Optional.ofNullable(playerPool.get(guild));
     }
 }

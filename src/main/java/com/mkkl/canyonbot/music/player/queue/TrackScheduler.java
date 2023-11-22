@@ -6,11 +6,17 @@ import com.mkkl.canyonbot.music.player.MusicPlayerBase;
 import com.mkkl.canyonbot.music.player.event.base.TrackEndEvent;
 import com.mkkl.canyonbot.music.player.event.scheduler.QueueEmptyEvent;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
+import jakarta.annotation.Nullable;
 import lombok.Getter;
 import reactor.core.publisher.Mono;
 
+import java.util.Objects;
+
 public class TrackScheduler {
     private final TrackQueue<TrackQueueElement> queue;
+    @Nullable
+    @Getter
+    private volatile TrackQueueElement currentTrack;
     private final MusicPlayerBase musicPlayerBase;
     @Getter
     private State state = State.STOPPED;
@@ -29,14 +35,17 @@ public class TrackScheduler {
                     if (trackEndEvent.getEndReason() != AudioTrackEndReason.CLEANUP) {
                         return Mono.fromRunnable(() -> {
                             TrackQueueElement track = queue.dequeue();
-                            if (track != null)
+                            if (track != null) {
+                                currentTrack = track;
                                 musicPlayerBase.playTrack(track.getAudioTrack());
-                            else {
+                            } else {
                                 musicBotEventDispatcher.publish(new QueueEmptyEvent(guildMusicBotManager, queue));
                                 state = State.STOPPED;
                             }
                         });
                     }
+                    state = State.STOPPED;
+                    currentTrack = null;
                     //Cleanup
                     return guildMusicBotManager.leave();//TODO event here as well
                 })
@@ -45,32 +54,34 @@ public class TrackScheduler {
     }
 
     public Mono<Void> start() {
-        if (state != State.STOPPED) return Mono.empty();//TODO return error
-        return Mono.fromRunnable(() -> {
-            TrackQueueElement track = queue.dequeue();
-            if (track != null) {
-                musicPlayerBase.playTrack(track.getAudioTrack());
-                state = State.PLAYING;
-                //TODO start event
-            }
-            //TODO return error
-        });
+        if (state != State.STOPPED) return Mono.error(new IllegalStateException("Already playing"));
+        return Mono.justOrEmpty(queue.dequeue())
+                .switchIfEmpty(Mono.error(new IllegalStateException("Queue is empty")))
+                .flatMap(trackQueueElement -> {
+                    currentTrack = trackQueueElement;
+                    musicPlayerBase.playTrack(trackQueueElement.getAudioTrack());
+                    state = State.PLAYING;
+                    return Mono.empty();
+                });
     }
 
     public Mono<Void> stop() {
-        if (state == State.STOPPED) return Mono.empty();
+        if (state == State.STOPPED) return Mono.error(new IllegalStateException("Already stopped"));
         return Mono.fromRunnable(() -> {
             queue.clear();
             musicPlayerBase.stopTrack();
+            currentTrack = null;
             state = State.STOPPED;
             //TODO stop event
         });
     }
 
-    public Mono<Void> skip() {//TODO return skipped track
-        if (state == State.STOPPED) return Mono.empty();
+    public Mono<TrackQueueElement> skip() {
+        if (state == State.STOPPED || currentTrack == null)
+            return Mono.error(new IllegalStateException("Nothing to skip"));
         //TODO skip event
-        return Mono.fromRunnable(musicPlayerBase::stopTrack);
+        return Mono.just(Objects.requireNonNull(currentTrack))
+                .then(Mono.fromRunnable(musicPlayerBase::stopTrack));
     }
 
     public Mono<Void> pause() {
