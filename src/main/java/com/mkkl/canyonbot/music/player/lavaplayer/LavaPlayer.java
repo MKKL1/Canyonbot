@@ -1,14 +1,11 @@
 package com.mkkl.canyonbot.music.player.lavaplayer;
 
 import com.mkkl.canyonbot.music.player.MusicPlayerBase;
-import com.mkkl.canyonbot.music.player.event.MusicPlayerEvent;
+import com.mkkl.canyonbot.music.player.event.base.MusicPlayerEvent;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import discord4j.voice.AudioProvider;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
-import reactor.core.scheduler.Scheduler;
-import reactor.core.scheduler.Schedulers;
 
 public class LavaPlayer implements MusicPlayerBase {
 

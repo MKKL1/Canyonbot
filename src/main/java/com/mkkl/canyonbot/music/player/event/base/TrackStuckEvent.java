@@ -1,4 +1,4 @@
-package com.mkkl.canyonbot.music.player.event;
+package com.mkkl.canyonbot.music.player.event.base;
 
 import com.mkkl.canyonbot.music.player.MusicPlayerBase;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;

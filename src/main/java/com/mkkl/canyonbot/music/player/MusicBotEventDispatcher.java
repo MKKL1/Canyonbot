@@ -1,6 +1,6 @@
 package com.mkkl.canyonbot.music.player;
 
-import com.mkkl.canyonbot.music.player.event.MusicPlayerEvent;
+import com.mkkl.canyonbot.music.player.event.base.MusicPlayerEvent;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;

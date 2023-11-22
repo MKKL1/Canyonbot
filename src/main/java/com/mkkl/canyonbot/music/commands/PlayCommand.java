@@ -7,7 +7,9 @@ import com.mkkl.canyonbot.music.MusicPlayerManager;
 import com.mkkl.canyonbot.music.messages.AudioTrackMessage;
 import com.mkkl.canyonbot.music.messages.ErrorMessage;
 import com.mkkl.canyonbot.music.messages.ShortPlaylistMessage;
+import com.mkkl.canyonbot.music.player.GuildMusicBotManager;
 import com.mkkl.canyonbot.music.player.queue.TrackQueueElement;
+import com.mkkl.canyonbot.music.player.queue.TrackScheduler;
 import com.mkkl.canyonbot.music.search.SearchManager;
 import com.mkkl.canyonbot.music.search.SearchResult;
 import com.mkkl.canyonbot.music.search.SourceRegistry;
@@ -27,6 +29,8 @@ import discord4j.discordjson.json.ApplicationCommandOptionData;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import discord4j.discordjson.json.ImmutableApplicationCommandOptionChoiceData;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -39,6 +43,7 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
     private final SourceRegistry sourceRegistry;
     private final DiscordClient client;
     private final MusicPlayerManager musicPlayerManager;
+    private final Scheduler scheduler = Schedulers.boundedElastic();
 
     //private CommandOptionCompletionManager completionManager;
     public PlayCommand(SearchManager searchManager, SourceRegistry sourceRegistry, DiscordClient client, MusicPlayerManager musicPlayerManager) {
@@ -115,54 +120,17 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
             searchResultMono = searchManager.search(query, sourceOptional.get());
         }
         return searchResultMono
+                .publishOn(Schedulers.boundedElastic())
                 .flatMap(searchResult -> {
                     Mono<Message> message = event.editReply("No match found");
                     if (searchResult.getPlaylists() != null && !searchResult.getPlaylists()
                             .isEmpty()) {
-                        //TODO not all tracks from playlist are loaded
-                        //TODO no title for playlist
-                        //TODO handle null on selected track
-                        //TODO this way of building message is too complicated and not clear, it should be refactored
-                        ShortPlaylistMessage shortPlaylistMessage = ShortPlaylistMessage.builder()
-                                .setPlaylist(searchResult.getPlaylists()
-                                        .getFirst())
-                                .setSource(searchResult.getSource())
-                                .setUser(event.getInteraction()
-                                        .getUser())
-                                .build();
-
-                        message = event.createFollowup(InteractionFollowupCreateSpec.builder()
-                                .addEmbed(AudioTrackMessage.builder()
-                                        .setAudioTrack(searchResult.getPlaylists()
-                                                .getFirst()
-                                                .getSelectedTrack())
-                                        .setSource(searchResult.getSource())
-                                        .setQuery(query)
-                                        .setUser(event.getInteraction()
-                                                .getUser())
-                                        .build()
-                                        .getSpec())
-                                .addEmbed(shortPlaylistMessage.getSpec())
-                                .addComponent(shortPlaylistMessage.getActionRow(client))
-                                .build());
-
-
+                        //SearchResult is a playlist
+                        message = handlePlaylist(event, searchResult, query);
                     } else if (searchResult.getTracks() != null && !searchResult.getTracks()
                             .isEmpty()) {
-                        AudioTrack track = searchResult.getTracks()
-                                .get(0);
-                        message = event.createFollowup(InteractionFollowupCreateSpec.builder()
-                                        .addEmbed(AudioTrackMessage.builder()
-                                                .setAudioTrack(track)
-                                                .setSource(searchResult.getSource())
-                                                .setQuery(query)
-                                                .setUser(event.getInteraction()
-                                                        .getUser())
-                                                .build()
-                                                .getSpec())
-                                        .build())
-                                .then(Mono.fromRunnable(() -> musicPlayerManager.getOrCreatePlayer(event.getInteraction().getGuild().block())
-                                        .enqueueAndJoin(new TrackQueueElement(track, event.getInteraction().getUser()), )));
+                        //SearchResult is a track
+                        message = handleTrack(event, searchResult, query);
                     }
 
                     return message;
@@ -175,6 +143,68 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                                         .getSpec())
                                 .build()))
                 .onErrorResume(throwable -> event.editReply("Error:" + throwable.getMessage())); //TODO log error, and send short message to user
+    }
+
+    private Mono<Message> handlePlaylist(ChatInputInteractionEvent event, SearchResult searchResult, String query) {
+        //TODO not all tracks from playlist are loaded
+        //TODO no title for playlist
+        //TODO handle null on selected track
+        //TODO this way of building message is too complicated and not clear, it should be refactored
+        assert searchResult.getPlaylists() != null;
+        ShortPlaylistMessage shortPlaylistMessage = ShortPlaylistMessage.builder()
+                .setPlaylist(searchResult.getPlaylists()
+                        .getFirst())
+                .setSource(searchResult.getSource())
+                .setUser(event.getInteraction()
+                        .getUser())
+                .build();
+
+        return event.createFollowup(InteractionFollowupCreateSpec.builder()
+                .addEmbed(AudioTrackMessage.builder()
+                        .setAudioTrack(searchResult.getPlaylists()
+                                .getFirst()
+                                .getSelectedTrack())
+                        .setSource(searchResult.getSource())
+                        .setQuery(query)
+                        .setUser(event.getInteraction()
+                                .getUser())
+                        .build()
+                        .getSpec())
+                .addEmbed(shortPlaylistMessage.getSpec())
+                .addComponent(shortPlaylistMessage.getActionRow(client))
+                .build());
+    }
+
+    private Mono<Message> handleTrack(ChatInputInteractionEvent event, SearchResult searchResult, String query) {
+        AudioTrack track = searchResult.getTracks()
+                .get(0);
+        //First adds track to queue and then sends confirmation message
+        return playTrack(event, track)
+                .then(event.createFollowup(InteractionFollowupCreateSpec.builder()
+                        .addEmbed(AudioTrackMessage.builder()
+                                .setAudioTrack(track)
+                                .setSource(searchResult.getSource())
+                                .setQuery(query)
+                                .setUser(event.getInteraction()
+                                        .getUser())
+                                .build()
+                                .getSpec())
+                        .build()));
+    }
+
+    //TODO very bad, should be refactored
+    private Mono<Void> playTrack(ChatInputInteractionEvent event, AudioTrack track) {
+        return Mono.fromRunnable(() -> {
+            GuildMusicBotManager guildMng = musicPlayerManager.getOrCreatePlayer(event.getInteraction()
+                    .getGuild()
+                    .block());//TODO not sure if it can be blocking
+            guildMng.getTrackQueue().enqueue(new TrackQueueElement(track, event.getInteraction().getUser()));
+            if(guildMng.isConnected().block()==false)
+                guildMng.join(event.getInteraction().getMember().get().getVoiceState().block().getChannel().block()).subscribe();
+            if(guildMng.getTrackScheduler().getState() == TrackScheduler.State.STOPPED)
+                guildMng.getTrackScheduler().start().subscribe();
+
+        });
     }
 
     @Override
