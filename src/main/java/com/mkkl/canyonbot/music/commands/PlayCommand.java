@@ -3,6 +3,7 @@ package com.mkkl.canyonbot.music.commands;
 import com.mkkl.canyonbot.commands.AutoCompleteCommand;
 import com.mkkl.canyonbot.commands.BotCommand;
 import com.mkkl.canyonbot.commands.RegisterCommand;
+import com.mkkl.canyonbot.commands.exceptions.ReplyMessageException;
 import com.mkkl.canyonbot.music.MusicPlayerManager;
 import com.mkkl.canyonbot.music.messages.AudioTrackMessage;
 import com.mkkl.canyonbot.music.messages.ErrorMessage;
@@ -19,15 +20,20 @@ import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import discord4j.core.DiscordClient;
 import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
+import discord4j.core.object.VoiceState;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.command.ApplicationCommandOption;
+import discord4j.core.object.entity.Member;
 import discord4j.core.object.entity.Message;
+import discord4j.core.object.entity.channel.Channel;
 import discord4j.core.spec.InteractionFollowupCreateSpec;
 import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
 import discord4j.discordjson.json.ApplicationCommandOptionData;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import discord4j.discordjson.json.ImmutableApplicationCommandOptionChoiceData;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
@@ -77,6 +83,12 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                                         .build())
                         .required(false)
                         .build())
+                .addOption(ApplicationCommandOptionData.builder()
+                        .name("channel")
+                        .type(ApplicationCommandOption.Type.CHANNEL.getValue())
+                        .description("Channel to play in")
+                        .required(false)
+                        .build())
                 .build());
         this.sourceRegistry = sourceRegistry;
         this.searchManager = searchManager;
@@ -91,61 +103,66 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
     @Override
     public Mono<Void> execute(ChatInputInteractionEvent event) {
         //TODO find a way to make this more generic
-        String query = event.getInteraction()
+        Optional<String> query = event.getInteraction()
                 .getCommandInteraction()
                 .flatMap(commandInteraction -> commandInteraction.getOption("query"))
                 .flatMap(ApplicationCommandInteractionOption::getValue)
-                .map(ApplicationCommandInteractionOptionValue::asString)
-                .orElseThrow();//TODO throw exception
+                .map(ApplicationCommandInteractionOptionValue::asString);
 
-        String sourceId = event.getInteraction()
+        Optional<String> sourceId = event.getInteraction()
                 .getCommandInteraction()
                 .flatMap(commandInteraction -> commandInteraction.getOption("source"))
                 .flatMap(ApplicationCommandInteractionOption::getValue)
-                .map(ApplicationCommandInteractionOptionValue::asString)
-                .orElse(null);
+                .map(ApplicationCommandInteractionOptionValue::asString);
+
+        Optional<Mono<Channel>> channel = event.getInteraction()
+                .getCommandInteraction()
+                .flatMap(commandInteraction -> commandInteraction.getOption("channel"))
+                .flatMap(ApplicationCommandInteractionOption::getValue)
+                .map(ApplicationCommandInteractionOptionValue::asChannel);
 
         return event.deferReply()
-                .then(handleQuery(event, query, sourceId))
+                .then(handleQuery(new CommandContext(event, query, sourceId, channel)))
                 .then();
     }
 
-    private Mono<Message> handleQuery(ChatInputInteractionEvent event, String query, String sourceId) {
+    private Mono<Message> handleQuery(CommandContext context) {
+        //TODO order of error checking is not easily modifiable, fix this
         Mono<SearchResult> searchResultMono;
-        if (sourceId == null) {
+        String query = context.query.orElseThrow(() -> new ReplyMessageException("Query not found"));
+        if (context.sourceId.isEmpty())
             searchResultMono = searchManager.search(query);
-        } else {
-            Optional<SearchSource> sourceOptional = sourceRegistry.getSource(sourceId);
-            if (sourceOptional.isEmpty()) return event.editReply("Source not found");
-            searchResultMono = searchManager.search(query, sourceOptional.get());
-        }
+        else
+            searchResultMono = searchManager.search(query, sourceRegistry.getSource(context.sourceId.get())
+                    .orElseThrow(() -> new ReplyMessageException("Source not found")));
+
         return searchResultMono
                 .publishOn(Schedulers.boundedElastic())
                 .flatMap(searchResult -> {
-                    Mono<Message> message = event.editReply("No match found");
+                    Mono<Message> message = context.event.editReply("No match found");//TODO this should be handled by NoMatchException
                     if (searchResult.getPlaylists() != null && !searchResult.getPlaylists()
                             .isEmpty()) {
                         //SearchResult is a playlist
-                        message = handlePlaylist(event, searchResult, query);
+                        message = handlePlaylist(context, searchResult);
                     } else if (searchResult.getTracks() != null && !searchResult.getTracks()
                             .isEmpty()) {
                         //SearchResult is a track
-                        message = handleTrack(event, searchResult, query);
+                        message = handleTrack(context, searchResult);
                     }
 
                     return message;
                 })
                 //TODO add identifier to thrown errors so that full tracelog could be found easier in log files
                 .onErrorResume(throwable -> throwable instanceof NoMatchException,
-                        throwable -> event.createFollowup(InteractionFollowupCreateSpec.builder()
-                                .addEmbed(ErrorMessage.of(event.getInteraction()
+                        throwable -> context.event.createFollowup(InteractionFollowupCreateSpec.builder()
+                                .addEmbed(ErrorMessage.of(context.event.getInteraction()
                                                 .getUser(), (NoMatchException) throwable)
                                         .getSpec())
                                 .build()))
-                .onErrorResume(throwable -> event.editReply("Error:" + throwable.getMessage())); //TODO log error, and send short message to user
+                .onErrorResume(throwable -> context.event.editReply("Error:" + throwable.getMessage())); //TODO log error, and send short message to user
     }
 
-    private Mono<Message> handlePlaylist(ChatInputInteractionEvent event, SearchResult searchResult, String query) {
+    private Mono<Message> handlePlaylist(CommandContext context, SearchResult searchResult) {
         //TODO not all tracks from playlist are loaded
         //TODO no title for playlist
         //TODO handle null on selected track
@@ -155,18 +172,18 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                 .setPlaylist(searchResult.getPlaylists()
                         .getFirst())
                 .setSource(searchResult.getSource())
-                .setUser(event.getInteraction()
+                .setUser(context.event.getInteraction()
                         .getUser())
                 .build();
 
-        return event.createFollowup(InteractionFollowupCreateSpec.builder()
+        return context.event.createFollowup(InteractionFollowupCreateSpec.builder()
                 .addEmbed(AudioTrackMessage.builder()
                         .setAudioTrack(searchResult.getPlaylists()
                                 .getFirst()
                                 .getSelectedTrack())
                         .setSource(searchResult.getSource())
-                        .setQuery(query)
-                        .setUser(event.getInteraction()
+                        .setQuery(context.query.orElseThrow(() -> new IllegalStateException("Query not found"))) //Should never happen
+                        .setUser(context.event.getInteraction()
                                 .getUser())
                         .build()
                         .getSpec())
@@ -175,17 +192,17 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                 .build());
     }
 
-    private Mono<Message> handleTrack(ChatInputInteractionEvent event, SearchResult searchResult, String query) {
+    private Mono<Message> handleTrack(CommandContext context, SearchResult searchResult) {
         AudioTrack track = searchResult.getTracks()
                 .get(0);
         //First adds track to queue and then sends confirmation message
-        return playTrack(event, track)
-                .then(event.createFollowup(InteractionFollowupCreateSpec.builder()
+        return playTrack(context.event, track)
+                .then(context.event.createFollowup(InteractionFollowupCreateSpec.builder()
                         .addEmbed(AudioTrackMessage.builder()
                                 .setAudioTrack(track)
                                 .setSource(searchResult.getSource())
-                                .setQuery(query)
-                                .setUser(event.getInteraction()
+                                .setQuery(context.query.orElseThrow(() -> new IllegalStateException("Query not found")))
+                                .setUser(context.event.getInteraction()
                                         .getUser())
                                 .build()
                                 .getSpec())
@@ -194,15 +211,32 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
 
     //TODO very bad, should be refactored
     private Mono<Void> playTrack(ChatInputInteractionEvent event, AudioTrack track) {
+        Mono<GuildMusicBotManager> guildMusicBotManagerMono = event.getInteraction()
+                .getGuild()
+                .flatMap(guild -> Mono.just(musicPlayerManager.getOrCreatePlayer(guild)));
+        guildMusicBotManagerMono.//TODO continue here
         return Mono.fromRunnable(() -> {
             GuildMusicBotManager guildMng = musicPlayerManager.getOrCreatePlayer(event.getInteraction()
                     .getGuild()
                     .block());//TODO not sure if it can be blocking
-            guildMng.getTrackQueue().enqueue(new TrackQueueElement(track, event.getInteraction().getUser()));
-            if(guildMng.isConnected().block()==false)
-                guildMng.join(event.getInteraction().getMember().get().getVoiceState().block().getChannel().block()).subscribe();
-            if(guildMng.getTrackScheduler().getState() == TrackScheduler.State.STOPPED)
-                guildMng.getTrackScheduler().start().subscribe();
+            guildMng.getTrackQueue()
+                    .enqueue(new TrackQueueElement(track, event.getInteraction()
+                            .getUser()));
+            if (guildMng.isConnected()
+                    .block() == false)
+                guildMng.join(event.getInteraction()
+                                .getMember()
+                                .get()
+                                .getVoiceState()
+                                .block()
+                                .getChannel()
+                                .block())
+                        .subscribe();
+            if (guildMng.getTrackScheduler()
+                    .getState() == TrackScheduler.State.STOPPED)
+                guildMng.getTrackScheduler()
+                        .start()
+                        .subscribe();
 
         });
     }
@@ -223,5 +257,15 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                     .build());
         }
         return choices;
+    }
+
+
+    @AllArgsConstructor
+    @Getter
+    private class CommandContext {
+        private final ChatInputInteractionEvent event;
+        private final Optional<String> query;
+        private final Optional<String> sourceId;
+        private final Optional<Mono<Channel>> channel;
     }
 }

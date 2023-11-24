@@ -37,6 +37,6 @@ public class SkipCommand extends BotCommand {
                                 return event.reply("Nothing to skip");
                             return event.reply("Error while skipping track");
                         })
-                ).publishOn(Schedulers.boundedElastic());
+                );
     }
 }
