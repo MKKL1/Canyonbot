@@ -26,12 +26,14 @@ import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.command.ApplicationCommandOption;
 import discord4j.core.object.entity.Member;
 import discord4j.core.object.entity.Message;
+import discord4j.core.object.entity.channel.AudioChannel;
 import discord4j.core.object.entity.channel.Channel;
 import discord4j.core.spec.InteractionFollowupCreateSpec;
 import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
 import discord4j.discordjson.json.ApplicationCommandOptionData;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import discord4j.discordjson.json.ImmutableApplicationCommandOptionChoiceData;
+import discord4j.voice.VoiceConnection;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import reactor.core.publisher.Mono;
@@ -42,6 +44,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
 
 @RegisterCommand
 public class PlayCommand extends BotCommand implements AutoCompleteCommand {
@@ -196,7 +199,7 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
         AudioTrack track = searchResult.getTracks()
                 .get(0);
         //First adds track to queue and then sends confirmation message
-        return playTrack(context.event, track)
+        return playTrack(context, track)
                 .then(context.event.createFollowup(InteractionFollowupCreateSpec.builder()
                         .addEmbed(AudioTrackMessage.builder()
                                 .setAudioTrack(track)
@@ -209,36 +212,34 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                         .build()));
     }
 
-    //TODO very bad, should be refactored
-    private Mono<Void> playTrack(ChatInputInteractionEvent event, AudioTrack track) {
-        Mono<GuildMusicBotManager> guildMusicBotManagerMono = event.getInteraction()
+    private Mono<Void> playTrack(CommandContext context, AudioTrack track) {
+        return context.event.getInteraction()
                 .getGuild()
-                .flatMap(guild -> Mono.just(musicPlayerManager.getOrCreatePlayer(guild)));
-        guildMusicBotManagerMono.//TODO continue here
-        return Mono.fromRunnable(() -> {
-            GuildMusicBotManager guildMng = musicPlayerManager.getOrCreatePlayer(event.getInteraction()
-                    .getGuild()
-                    .block());//TODO not sure if it can be blocking
-            guildMng.getTrackQueue()
-                    .enqueue(new TrackQueueElement(track, event.getInteraction()
-                            .getUser()));
-            if (guildMng.isConnected()
-                    .block() == false)
-                guildMng.join(event.getInteraction()
-                                .getMember()
-                                .get()
-                                .getVoiceState()
-                                .block()
-                                .getChannel()
-                                .block())
-                        .subscribe();
-            if (guildMng.getTrackScheduler()
-                    .getState() == TrackScheduler.State.STOPPED)
-                guildMng.getTrackScheduler()
-                        .start()
-                        .subscribe();
-
-        });
+                .flatMap(guild -> Mono.just(musicPlayerManager.getOrCreatePlayer(guild)))
+                .flatMap(guildMng -> {
+                    Mono<Void> enqueueMono = Mono.fromRunnable(() -> guildMng.getTrackQueue()
+                            .enqueue(new TrackQueueElement(track, context.event.getInteraction()
+                                    .getUser())));
+                    Mono<VoiceConnection> joinMono = guildMng.isConnected()
+                            .flatMap(isConnected -> {
+                                if (isConnected) return Mono.empty();
+                                return context.channel.orElse(context.event.getInteraction()
+                                                .getMember()
+                                                .orElseThrow(() -> new ReplyMessageException("Member not found"))
+                                                .getVoiceState()
+                                                .flatMap(VoiceState::getChannel))
+                                        .flatMap(channel -> {
+                                            if (!(channel instanceof AudioChannel))
+                                                return Mono.error(new ReplyMessageException(channel + " is not Audio Channel"));
+                                            return Mono.just((AudioChannel) channel);
+                                        })
+                                        .flatMap(guildMng::join);
+                            });
+                    Mono<Void> startMono = Mono.just(guildMng.getTrackScheduler())
+                            .filter(scheduler -> scheduler.getState() == TrackScheduler.State.STOPPED)
+                            .flatMap(TrackScheduler::start);
+                    return enqueueMono.then(joinMono).then(startMono);
+                });
     }
 
     @Override
