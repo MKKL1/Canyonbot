@@ -222,12 +222,12 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                     Mono<VoiceConnection> joinMono = guildMng.isConnected()
                             .flatMap(isConnected -> {
                                 if (isConnected) return Mono.empty();
-                                //TODO if user is not in channel error won't be caught
                                 return context.channel.orElse(context.event.getInteraction()
                                                 .getMember()
                                                 .orElseThrow(() -> new ReplyMessageException("Member not found"))
                                                 .getVoiceState()
                                                 .flatMap(VoiceState::getChannel))
+                                        .switchIfEmpty(Mono.error(new ReplyMessageException("Channel not found")))
                                         .flatMap(channel -> {
                                             if (!(channel instanceof AudioChannel))
                                                 return Mono.error(new ReplyMessageException(channel.getMention() + " is not Audio Channel"));
