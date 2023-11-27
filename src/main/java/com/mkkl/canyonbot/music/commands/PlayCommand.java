@@ -156,10 +156,10 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                     return message;
                 })
                 //TODO add identifier to thrown errors so that full tracelog could be found easier in log files
-                .onErrorResume(throwable -> throwable instanceof NoMatchException,
+                .onErrorResume(throwable -> throwable instanceof ReplyMessageException,
                         throwable -> context.event.createFollowup(InteractionFollowupCreateSpec.builder()
                                 .addEmbed(ErrorMessage.of(context.event.getInteraction()
-                                                .getUser(), (NoMatchException) throwable)
+                                                .getUser(), (ReplyMessageException) throwable)
                                         .getSpec())
                                 .build()))
                 .onErrorResume(throwable -> context.event.editReply("Error:" + throwable.getMessage())); //TODO log error, and send short message to user
@@ -172,11 +172,9 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
         //TODO this way of building message is too complicated and not clear, it should be refactored
         assert searchResult.getPlaylists() != null;
         ShortPlaylistMessage shortPlaylistMessage = ShortPlaylistMessage.builder()
-                .setPlaylist(searchResult.getPlaylists()
-                        .getFirst())
+                .setPlaylist(searchResult.getPlaylists().getFirst())
                 .setSource(searchResult.getSource())
-                .setUser(context.event.getInteraction()
-                        .getUser())
+                .setUser(context.event.getInteraction().getUser())
                 .build();
 
         return context.event.createFollowup(InteractionFollowupCreateSpec.builder()
@@ -212,6 +210,7 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                         .build()));
     }
 
+    //TODO this part of code requires cleanup, there are too many nested monos
     private Mono<Void> playTrack(CommandContext context, AudioTrack track) {
         return context.event.getInteraction()
                 .getGuild()
@@ -223,6 +222,7 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                     Mono<VoiceConnection> joinMono = guildMng.isConnected()
                             .flatMap(isConnected -> {
                                 if (isConnected) return Mono.empty();
+                                //TODO if user is not in channel error won't be caught
                                 return context.channel.orElse(context.event.getInteraction()
                                                 .getMember()
                                                 .orElseThrow(() -> new ReplyMessageException("Member not found"))
@@ -230,7 +230,7 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                                                 .flatMap(VoiceState::getChannel))
                                         .flatMap(channel -> {
                                             if (!(channel instanceof AudioChannel))
-                                                return Mono.error(new ReplyMessageException(channel + " is not Audio Channel"));
+                                                return Mono.error(new ReplyMessageException(channel.getMention() + " is not Audio Channel"));
                                             return Mono.just((AudioChannel) channel);
                                         })
                                         .flatMap(guildMng::join);
@@ -263,7 +263,7 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
 
     @AllArgsConstructor
     @Getter
-    private class CommandContext {
+    private static class CommandContext {
         private final ChatInputInteractionEvent event;
         private final Optional<String> query;
         private final Optional<String> sourceId;

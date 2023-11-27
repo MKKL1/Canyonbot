@@ -35,8 +35,8 @@ public class TrackScheduler {
                     if (trackEndEvent.getEndReason() != AudioTrackEndReason.CLEANUP) {
                         return Mono.fromRunnable(() -> {
                             TrackQueueElement track = queue.dequeue();
+                            currentTrack = track;
                             if (track != null) {
-                                currentTrack = track;
                                 musicPlayerBase.playTrack(track.getAudioTrack());
                             } else {
                                 musicBotEventDispatcher.publish(new QueueEmptyEvent(guildMusicBotManager, queue));
@@ -63,6 +63,14 @@ public class TrackScheduler {
                     state = State.PLAYING;
                     return Mono.empty();
                 });
+    }
+
+    public Mono<Void> playInstant(TrackQueueElement trackQueueElement) {
+        return Mono.empty();
+    }
+
+    public Mono<Void> replaceCurrent(TrackQueueElement trackQueueElement) {
+        return Mono.empty();
     }
 
     public Mono<Void> stop() {

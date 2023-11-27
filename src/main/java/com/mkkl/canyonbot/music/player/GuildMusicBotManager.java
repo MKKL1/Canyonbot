@@ -1,5 +1,6 @@
 package com.mkkl.canyonbot.music.player;
 
+import com.mkkl.canyonbot.music.player.event.scheduler.QueueEmptyEvent;
 import com.mkkl.canyonbot.music.player.queue.SimpleTrackQueue;
 import com.mkkl.canyonbot.music.player.queue.TrackQueue;
 import com.mkkl.canyonbot.music.player.queue.TrackQueueElement;
@@ -40,6 +41,8 @@ public class GuildMusicBotManager {
         this.eventDispatcher = MusicBotEventDispatcher.create();
         this.player.registerEvents(this, eventDispatcher);
         this.trackScheduler = new TrackScheduler(trackQueue, player, eventDispatcher, this);
+        //TODO this should be configurable
+        eventDispatcher.on(QueueEmptyEvent.class).flatMap(queueEmptyEvent -> leave()).subscribe();
     }
 
     public static GuildMusicBotManager create(Guild guild, MusicPlayerBase musicPlayerBase, AudioProvider audioProvider) {
