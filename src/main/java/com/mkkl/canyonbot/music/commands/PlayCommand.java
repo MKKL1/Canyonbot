@@ -2,19 +2,17 @@ package com.mkkl.canyonbot.music.commands;
 
 import com.mkkl.canyonbot.commands.AutoCompleteCommand;
 import com.mkkl.canyonbot.commands.BotCommand;
+import com.mkkl.canyonbot.commands.DefaultErrorHandler;
 import com.mkkl.canyonbot.commands.RegisterCommand;
 import com.mkkl.canyonbot.commands.exceptions.ReplyMessageException;
 import com.mkkl.canyonbot.music.MusicPlayerManager;
 import com.mkkl.canyonbot.music.messages.AudioTrackMessage;
-import com.mkkl.canyonbot.music.messages.ErrorMessage;
 import com.mkkl.canyonbot.music.messages.ShortPlaylistMessage;
-import com.mkkl.canyonbot.music.player.GuildMusicBotManager;
 import com.mkkl.canyonbot.music.player.queue.TrackQueueElement;
 import com.mkkl.canyonbot.music.player.queue.TrackScheduler;
 import com.mkkl.canyonbot.music.search.SearchManager;
 import com.mkkl.canyonbot.music.search.SearchResult;
 import com.mkkl.canyonbot.music.search.SourceRegistry;
-import com.mkkl.canyonbot.music.exceptions.NoMatchException;
 import com.mkkl.canyonbot.music.search.internal.sources.SearchSource;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import discord4j.core.DiscordClient;
@@ -26,6 +24,7 @@ import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.command.ApplicationCommandOption;
 import discord4j.core.object.entity.Member;
 import discord4j.core.object.entity.Message;
+import discord4j.core.object.entity.PartialMember;
 import discord4j.core.object.entity.channel.AudioChannel;
 import discord4j.core.object.entity.channel.Channel;
 import discord4j.core.spec.InteractionFollowupCreateSpec;
@@ -44,7 +43,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Predicate;
+import java.util.function.Function;
 
 @RegisterCommand
 public class PlayCommand extends BotCommand implements AutoCompleteCommand {
@@ -55,7 +54,11 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
     private final Scheduler scheduler = Schedulers.boundedElastic();
 
     //private CommandOptionCompletionManager completionManager;
-    public PlayCommand(SearchManager searchManager, SourceRegistry sourceRegistry, DiscordClient client, MusicPlayerManager musicPlayerManager) {
+    public PlayCommand(SearchManager searchManager,
+                       SourceRegistry sourceRegistry,
+                       DiscordClient client,
+                       MusicPlayerManager musicPlayerManager,
+                       DefaultErrorHandler errorHandler) {
         super(ApplicationCommandRequest.builder()
                 .name("play")
                 .description("Play a song")
@@ -92,7 +95,7 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                         .description("Channel to play in")
                         .required(false)
                         .build())
-                .build());
+                .build(), errorHandler);
         this.sourceRegistry = sourceRegistry;
         this.searchManager = searchManager;
         //completionManager = new CommandOptionCompletionManager();
@@ -118,11 +121,12 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                 .flatMap(ApplicationCommandInteractionOption::getValue)
                 .map(ApplicationCommandInteractionOptionValue::asString);
 
-        Optional<Mono<Channel>> channel = event.getInteraction()
+        Mono<Channel> channel = event.getInteraction()
                 .getCommandInteraction()
                 .flatMap(commandInteraction -> commandInteraction.getOption("channel"))
                 .flatMap(ApplicationCommandInteractionOption::getValue)
-                .map(ApplicationCommandInteractionOptionValue::asChannel);
+                .map(ApplicationCommandInteractionOptionValue::asChannel)
+                .orElse(Mono.empty());
 
         return event.deferReply()
                 .then(handleQuery(new CommandContext(event, query, sourceId, channel)))
@@ -154,15 +158,7 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                     }
 
                     return message;
-                })
-                //TODO add identifier to thrown errors so that full tracelog could be found easier in log files
-                .onErrorResume(throwable -> throwable instanceof ReplyMessageException,
-                        throwable -> context.event.createFollowup(InteractionFollowupCreateSpec.builder()
-                                .addEmbed(ErrorMessage.of(context.event.getInteraction()
-                                                .getUser(), (ReplyMessageException) throwable)
-                                        .getSpec())
-                                .build()))
-                .onErrorResume(throwable -> context.event.editReply("Error:" + throwable.getMessage())); //TODO log error, and send short message to user
+                });
     }
 
     private Mono<Message> handlePlaylist(CommandContext context, SearchResult searchResult) {
@@ -172,9 +168,11 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
         //TODO this way of building message is too complicated and not clear, it should be refactored
         assert searchResult.getPlaylists() != null;
         ShortPlaylistMessage shortPlaylistMessage = ShortPlaylistMessage.builder()
-                .setPlaylist(searchResult.getPlaylists().getFirst())
+                .setPlaylist(searchResult.getPlaylists()
+                        .getFirst())
                 .setSource(searchResult.getSource())
-                .setUser(context.event.getInteraction().getUser())
+                .setUser(context.event.getInteraction()
+                        .getUser())
                 .build();
 
         return context.event.createFollowup(InteractionFollowupCreateSpec.builder()
@@ -194,8 +192,7 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
     }
 
     private Mono<Message> handleTrack(CommandContext context, SearchResult searchResult) {
-        AudioTrack track = searchResult.getTracks()
-                .get(0);
+        AudioTrack track = searchResult.getTracks().get(0);
         //First adds track to queue and then sends confirmation message
         return playTrack(context, track)
                 .then(context.event.createFollowup(InteractionFollowupCreateSpec.builder()
@@ -213,33 +210,35 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
     //TODO this part of code requires cleanup, there are too many nested monos
     private Mono<Void> playTrack(CommandContext context, AudioTrack track) {
         return context.event.getInteraction()
-                .getGuild()
-                .flatMap(guild -> Mono.just(musicPlayerManager.getOrCreatePlayer(guild)))
-                .flatMap(guildMng -> {
-                    Mono<Void> enqueueMono = Mono.fromRunnable(() -> guildMng.getTrackQueue()
-                            .enqueue(new TrackQueueElement(track, context.event.getInteraction()
-                                    .getUser())));
-                    Mono<VoiceConnection> joinMono = guildMng.isConnected()
-                            .flatMap(isConnected -> {
-                                if (isConnected) return Mono.empty();
-                                return context.channel.orElse(context.event.getInteraction()
-                                                .getMember()
-                                                .orElseThrow(() -> new ReplyMessageException("Member not found"))
-                                                .getVoiceState()
-                                                .flatMap(VoiceState::getChannel))
-                                        .switchIfEmpty(Mono.error(new ReplyMessageException("Channel not found")))
-                                        .flatMap(channel -> {
-                                            if (!(channel instanceof AudioChannel))
-                                                return Mono.error(new ReplyMessageException(channel.getMention() + " is not Audio Channel"));
-                                            return Mono.just((AudioChannel) channel);
-                                        })
-                                        .flatMap(guildMng::join);
-                            });
-                    Mono<Void> startMono = Mono.just(guildMng.getTrackScheduler())
-                            .filter(scheduler -> scheduler.getState() == TrackScheduler.State.STOPPED)
-                            .flatMap(TrackScheduler::start);
-                    return enqueueMono.then(joinMono).then(startMono);
-                });
+            .getGuild()
+            .flatMap(guild -> Mono.just(musicPlayerManager.getOrCreatePlayer(guild)))
+            .flatMap(guildMng -> {
+                Mono<Void> enqueueMono = Mono.fromRunnable(() -> guildMng.getTrackQueue()
+                    .enqueue(new TrackQueueElement(track, context.event.getInteraction().getUser())));
+                Mono<VoiceConnection> joinMono = guildMng.isConnected()
+                    .flatMap(isConnected -> {
+                        if (isConnected) return Mono.empty();
+
+                        return context.channel
+                            .switchIfEmpty(Mono.justOrEmpty(context.event.getInteraction().getMember())
+                                .switchIfEmpty(Mono.error(new ReplyMessageException("Member not found")))
+                                .flatMap(PartialMember::getVoiceState)
+                                .flatMap(VoiceState::getChannel))
+                            .switchIfEmpty(Mono.error(new ReplyMessageException("Channel not found")))
+                            .flatMap(channel -> {
+                                if (!(channel instanceof AudioChannel))
+                                    return Mono.error(new ReplyMessageException(channel.getMention() + " is not Audio Channel"));
+                                return Mono.just((AudioChannel) channel);
+                            })
+                            .flatMap(guildMng::join);
+
+                    });
+                Mono<Void> startMono = Mono.just(guildMng.getTrackScheduler())
+                        .filter(scheduler -> scheduler.getState() == TrackScheduler.State.STOPPED)
+                        .flatMap(TrackScheduler::start);
+                return enqueueMono.then(joinMono)
+                        .then(startMono);
+            });
     }
 
     @Override
@@ -267,6 +266,6 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
         private final ChatInputInteractionEvent event;
         private final Optional<String> query;
         private final Optional<String> sourceId;
-        private final Optional<Mono<Channel>> channel;
+        private final Mono<Channel> channel;
     }
 }

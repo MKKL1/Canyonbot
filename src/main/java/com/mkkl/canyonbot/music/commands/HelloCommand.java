@@ -1,6 +1,7 @@
 package com.mkkl.canyonbot.music.commands;
 
 import com.mkkl.canyonbot.commands.BotCommand;
+import com.mkkl.canyonbot.commands.DefaultErrorHandler;
 import com.mkkl.canyonbot.commands.RegisterCommand;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandOption;
@@ -11,7 +12,7 @@ import reactor.core.publisher.Mono;
 @RegisterCommand
 public class HelloCommand extends BotCommand {
 
-    public HelloCommand() {
+    public HelloCommand(DefaultErrorHandler errorHandler) {
         super(ApplicationCommandRequest.builder()
                 .name("hello")
                 .description("Say hello")
@@ -20,7 +21,7 @@ public class HelloCommand extends BotCommand {
                         .type(ApplicationCommandOption.Type.USER.getValue())
                         .description("User to say hello to")
                         .required(true).build())
-                .build());
+                .build(), errorHandler);
     }
 
     @Override

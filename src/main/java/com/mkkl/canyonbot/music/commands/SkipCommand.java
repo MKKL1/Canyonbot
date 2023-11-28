@@ -1,24 +1,22 @@
 package com.mkkl.canyonbot.music.commands;
 
 import com.mkkl.canyonbot.commands.BotCommand;
+import com.mkkl.canyonbot.commands.DefaultErrorHandler;
 import com.mkkl.canyonbot.commands.RegisterCommand;
 import com.mkkl.canyonbot.music.MusicPlayerManager;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
-
-import java.util.function.Supplier;
 
 @RegisterCommand
 public class SkipCommand extends BotCommand {
     private final MusicPlayerManager musicPlayerManager;
 
-    public SkipCommand(MusicPlayerManager musicPlayerManager) {
+    public SkipCommand(MusicPlayerManager musicPlayerManager, DefaultErrorHandler errorHandler) {
         super(ApplicationCommandRequest.builder()
                 .name("skip")
                 .description("Skips the current track")
-                .build());
+                .build(), errorHandler);
         this.musicPlayerManager = musicPlayerManager;
     }
 

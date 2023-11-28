@@ -30,11 +30,11 @@ public class CommandExecutor {
     public Mono<Void> register() {
         return discordClient.withGateway(gateway -> gateway.on(ChatInputInteractionEvent.class, event -> {
                 Optional<BotCommand> optionalCommand = commandRegistry.getCommandByName(event.getCommandName());
-                if (optionalCommand.isEmpty()) {
-                    return event.reply("Command not found");//TODO localize
+                    //TODO localize
+                    return optionalCommand.map(botCommand -> botCommand.execute(event)
+                                    .onErrorResume(throwable -> botCommand.getErrorHandler().handle(throwable, event)))
+                            .orElseGet(() -> event.reply("Command not found"));
                 }
-                return optionalCommand.get().execute(event);
-            }
         )).and(discordClient.withGateway(gateway -> gateway.on(ChatInputAutoCompleteEvent.class, event -> {
             Optional<AutoCompleteCommand> optionalCommand = commandRegistry.getAutoCompleteCommandByName(event.getCommandName());
             if (optionalCommand.isEmpty()) {

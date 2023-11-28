@@ -1,6 +1,7 @@
 package com.mkkl.canyonbot.music.commands;
 
 import com.mkkl.canyonbot.commands.BotCommand;
+import com.mkkl.canyonbot.commands.DefaultErrorHandler;
 import com.mkkl.canyonbot.commands.RegisterCommand;
 import com.mkkl.canyonbot.music.MusicPlayerManager;
 import com.mkkl.canyonbot.music.messages.QueueMessage;
@@ -13,11 +14,11 @@ import reactor.core.publisher.Mono;
 public class ShowQueueCommand extends BotCommand {
     private final MusicPlayerManager musicPlayerManager;
 
-    protected ShowQueueCommand(MusicPlayerManager musicPlayerManager) {
+    protected ShowQueueCommand(MusicPlayerManager musicPlayerManager, DefaultErrorHandler errorHandler) {
         super(ApplicationCommandRequest.builder()
                 .name("queue")
                 .description("Shows the current queue")
-                .build());
+                .build(), errorHandler);
         this.musicPlayerManager = musicPlayerManager;
     }
 
