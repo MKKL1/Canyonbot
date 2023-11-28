@@ -14,6 +14,8 @@ import java.util.Objects;
 
 public class TrackScheduler {
     private final TrackQueue<TrackQueueElement> queue;
+
+    //TODO replace with object that holds info about currently played track like current time
     @Nullable
     @Getter
     private volatile TrackQueueElement currentTrack;

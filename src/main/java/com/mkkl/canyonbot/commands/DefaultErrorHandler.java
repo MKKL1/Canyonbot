@@ -12,6 +12,7 @@ public class DefaultErrorHandler implements CommandErrorHandler {
     @Override
     public Mono<Void> handle(Throwable throwable, ChatInputInteractionEvent event) {
         //TODO add identifier to thrown errors so that full tracelog could be found easier in log files
+        //TODO there needs to be a distinction between user and application caused errors
         if(throwable instanceof ReplyMessageException)
             return event.createFollowup(InteractionFollowupCreateSpec.builder()
                     .addEmbed(ErrorMessage.of(event.getInteraction()

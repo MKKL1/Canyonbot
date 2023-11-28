@@ -24,23 +24,25 @@ public class CommandExecutor {
     public CommandExecutor(DiscordClient discordClient, CommandRegistry commandRegistry) {
         this.discordClient = discordClient;
         this.commandRegistry = commandRegistry;
-        this.register().subscribe(); // TODO move?
+        this.register()
+                .subscribe(); // TODO move?
     }
 
     public Mono<Void> register() {
         return discordClient.withGateway(gateway -> gateway.on(ChatInputInteractionEvent.class, event -> {
-                Optional<BotCommand> optionalCommand = commandRegistry.getCommandByName(event.getCommandName());
-                    //TODO localize
-                    return optionalCommand.map(botCommand -> botCommand.execute(event)
-                                    .onErrorResume(throwable -> botCommand.getErrorHandler().handle(throwable, event)))
-                            .orElseGet(() -> event.reply("Command not found"));
+            //TODO localize
+            return commandRegistry.getCommandByName(event.getCommandName())
+                .map(botCommand -> botCommand.execute(event)
+                        .onErrorResume(throwable -> botCommand.getErrorHandler().handle(throwable, event)))
+                .orElseGet(() -> event.reply("Command not found"));
+            }))
+            .and(discordClient.withGateway(gateway -> gateway.on(ChatInputAutoCompleteEvent.class, event -> {
+                Optional<AutoCompleteCommand> optionalCommand = commandRegistry.getAutoCompleteCommandByName(event.getCommandName());
+                if (optionalCommand.isEmpty()) {
+                    return Mono.empty();
                 }
-        )).and(discordClient.withGateway(gateway -> gateway.on(ChatInputAutoCompleteEvent.class, event -> {
-            Optional<AutoCompleteCommand> optionalCommand = commandRegistry.getAutoCompleteCommandByName(event.getCommandName());
-            if (optionalCommand.isEmpty()) {
-                return Mono.empty();
-            }
-            return optionalCommand.get().autoComplete(event);
-        })));
+                return optionalCommand.get()
+                        .autoComplete(event);
+            })));
     }
 }
