@@ -43,24 +43,12 @@ public class ShortPlaylistMessage implements ResponseMessage {
     }
 
     //TODO remove button used to play playlist after it has been clicked
-    public ActionRow getActionRow(DiscordClient client) {
-        Button playButton = Button.primary("play-playlist", "Play playlist");
-        //TODO subscribing here is weird
-        new PlayPlaylistButton(playButton).register(client, SearchResponseConst.BUTTON_TIMEOUT).subscribe();
-        return ActionRow.of(playButton);
-    }
-
-    private class PlayPlaylistButton extends TempListenableButton {
-
-        public PlayPlaylistButton(Button button) {
-            super(button);
-        }
-
-        @Override
-        public Mono<Void> onButtonPress(ButtonInteractionEvent event) {
-            //TODO load playlist to queue
-            //TODO and maybe add some permission check
-            return event.reply("Loaded playlist " + playlist.getName());
-        }
+    public ActionRow getActionRow() {
+//        //TODO subscribing here is weird
+//        TempListenableButton playButton = TempListenableButton.builder(Button.primary("play-playlist", "Play playlist"))
+//                .setButtonClickAction(event -> event.edit("siema"))
+//                .register(SearchResponseConst.BUTTON_TIMEOUT).subscribe();
+//        return ActionRow.of(playButton);
+        return null;
     }
 }

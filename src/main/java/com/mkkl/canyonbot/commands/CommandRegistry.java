@@ -21,8 +21,7 @@ public class CommandRegistry {
         this.autoCompleteCommandsByName = new HashMap<>();
         Map<String,Object> commandBeans = context.getBeansWithAnnotation(RegisterCommand.class);
         for (Map.Entry<String, Object> entry : commandBeans.entrySet()) {
-            if (entry.getValue() instanceof BotCommand) {
-                BotCommand command = (BotCommand) entry.getValue();
+            if (entry.getValue() instanceof BotCommand command) {
                 add(command);
                 if(command instanceof AutoCompleteCommand) {
                     autoCompleteCommandsByName.put(command.getCommandRequest().name(), (AutoCompleteCommand) command);

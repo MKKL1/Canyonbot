@@ -49,14 +49,12 @@ import java.util.function.Function;
 public class PlayCommand extends BotCommand implements AutoCompleteCommand {
     private final SearchManager searchManager;
     private final SourceRegistry sourceRegistry;
-    private final DiscordClient client;
     private final MusicPlayerManager musicPlayerManager;
     private final Scheduler scheduler = Schedulers.boundedElastic();
 
     //private CommandOptionCompletionManager completionManager;
     public PlayCommand(SearchManager searchManager,
                        SourceRegistry sourceRegistry,
-                       DiscordClient client,
                        MusicPlayerManager musicPlayerManager,
                        DefaultErrorHandler errorHandler) {
         super(ApplicationCommandRequest.builder()
@@ -102,7 +100,6 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
         //TODO autocompletion for query. This should work by searching the index of query terms and returning the most popular ones
         //TODO autocompletion for source IS NOT NEEDED. It is already handled by discord using choices
         //completionManager.addOption("source", new CommandOptionCompletion(sourceRegistry.sourceSuggestionOptions()));
-        this.client = client;
         this.musicPlayerManager = musicPlayerManager;
     }
 
@@ -187,7 +184,7 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                         .build()
                         .getSpec())
                 .addEmbed(shortPlaylistMessage.getSpec())
-                .addComponent(shortPlaylistMessage.getActionRow(client))
+                .addComponent(shortPlaylistMessage.getActionRow())
                 .build());
     }
 
