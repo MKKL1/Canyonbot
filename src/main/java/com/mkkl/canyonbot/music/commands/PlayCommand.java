@@ -5,24 +5,21 @@ import com.mkkl.canyonbot.commands.BotCommand;
 import com.mkkl.canyonbot.commands.DefaultErrorHandler;
 import com.mkkl.canyonbot.commands.RegisterCommand;
 import com.mkkl.canyonbot.commands.exceptions.ReplyMessageException;
-import com.mkkl.canyonbot.music.MusicPlayerManager;
 import com.mkkl.canyonbot.music.messages.AudioTrackMessage;
 import com.mkkl.canyonbot.music.messages.ShortPlaylistMessage;
 import com.mkkl.canyonbot.music.player.queue.TrackQueueElement;
-import com.mkkl.canyonbot.music.player.queue.TrackScheduler;
-import com.mkkl.canyonbot.music.search.SearchManager;
+import com.mkkl.canyonbot.music.player.queue.TrackSchedulerData;
+import com.mkkl.canyonbot.music.search.SearchService;
 import com.mkkl.canyonbot.music.search.SearchResult;
 import com.mkkl.canyonbot.music.search.SourceRegistry;
 import com.mkkl.canyonbot.music.search.internal.sources.SearchSource;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
-import discord4j.core.DiscordClient;
 import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.VoiceState;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.command.ApplicationCommandOption;
-import discord4j.core.object.entity.Member;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.PartialMember;
 import discord4j.core.object.entity.channel.AudioChannel;
@@ -43,17 +40,16 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
 
 @RegisterCommand
 public class PlayCommand extends BotCommand implements AutoCompleteCommand {
-    private final SearchManager searchManager;
+    private final SearchService searchService;
     private final SourceRegistry sourceRegistry;
     private final MusicPlayerManager musicPlayerManager;
     private final Scheduler scheduler = Schedulers.boundedElastic();
 
     //private CommandOptionCompletionManager completionManager;
-    public PlayCommand(SearchManager searchManager,
+    public PlayCommand(SearchService searchService,
                        SourceRegistry sourceRegistry,
                        MusicPlayerManager musicPlayerManager,
                        DefaultErrorHandler errorHandler) {
@@ -95,7 +91,7 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                         .build())
                 .build(), errorHandler);
         this.sourceRegistry = sourceRegistry;
-        this.searchManager = searchManager;
+        this.searchService = searchService;
         //completionManager = new CommandOptionCompletionManager();
         //TODO autocompletion for query. This should work by searching the index of query terms and returning the most popular ones
         //TODO autocompletion for source IS NOT NEEDED. It is already handled by discord using choices
@@ -135,9 +131,9 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
         Mono<SearchResult> searchResultMono;
         String query = context.query.orElseThrow(() -> new ReplyMessageException("Query not found"));
         if (context.sourceId.isEmpty())
-            searchResultMono = searchManager.search(query);
+            searchResultMono = searchService.search(query);
         else
-            searchResultMono = searchManager.search(query, sourceRegistry.getSource(context.sourceId.get())
+            searchResultMono = searchService.search(query, sourceRegistry.getSource(context.sourceId.get())
                     .orElseThrow(() -> new ReplyMessageException("Source not found")));
 
         return searchResultMono
@@ -231,8 +227,8 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
 
                     });
                 Mono<Void> startMono = Mono.just(guildMng.getTrackScheduler())
-                        .filter(scheduler -> scheduler.getState() == TrackScheduler.State.STOPPED)
-                        .flatMap(TrackScheduler::start);
+                        .filter(scheduler -> scheduler.getState() == TrackSchedulerData.State.STOPPED)
+                        .flatMap(TrackSchedulerData::start);
                 return enqueueMono.then(joinMono)
                         .then(startMono);
             });

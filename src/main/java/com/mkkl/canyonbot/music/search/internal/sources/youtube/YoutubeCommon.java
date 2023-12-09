@@ -1,7 +1,7 @@
 package com.mkkl.canyonbot.music.search.internal.sources.youtube;
 
-import com.mkkl.canyonbot.music.search.SearchResult;
 import com.mkkl.canyonbot.music.search.internal.sources.SearchSource;
+import com.mkkl.canyonbot.music.search.SearchResult;
 import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeAudioSourceManager;
 import com.sedmelluq.discord.lavaplayer.track.AudioItem;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;

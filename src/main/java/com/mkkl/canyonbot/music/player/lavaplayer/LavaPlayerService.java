@@ -2,17 +2,17 @@ package com.mkkl.canyonbot.music.player.lavaplayer;
 
 import com.mkkl.canyonbot.music.player.GuildMusicBotManager;
 import com.mkkl.canyonbot.music.player.MusicBotEventDispatcher;
-import com.mkkl.canyonbot.music.player.MusicPlayerBase;
+import com.mkkl.canyonbot.music.player.MusicPlayerBaseService;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import discord4j.voice.AudioProvider;
 
-public class LavaPlayer implements MusicPlayerBase {
+public class LavaPlayerService implements MusicPlayerBaseService {
 
     private final AudioPlayer audioPlayer;
     private final LavaPlayerAudioProvider audioProvider;
 
-    public LavaPlayer(AudioPlayer audioPlayer) {
+    public LavaPlayerService(AudioPlayer audioPlayer) {
         this.audioPlayer = audioPlayer;
         audioProvider = new LavaPlayerAudioProvider(audioPlayer);
     }

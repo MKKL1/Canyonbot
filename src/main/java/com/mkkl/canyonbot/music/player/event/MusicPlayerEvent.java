@@ -1,7 +1,6 @@
 package com.mkkl.canyonbot.music.player.event;
 
 import com.mkkl.canyonbot.music.player.GuildMusicBotManager;
-import com.mkkl.canyonbot.music.player.MusicPlayerBase;
 import lombok.Getter;
 
 @Getter

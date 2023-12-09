@@ -2,7 +2,6 @@ package com.mkkl.canyonbot.music.search;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
-import com.mkkl.canyonbot.commands.completion.SuggestionOption;
 import com.mkkl.canyonbot.music.search.internal.sources.RegisterSource;
 import com.mkkl.canyonbot.music.search.internal.sources.SearchSource;
 import lombok.Getter;

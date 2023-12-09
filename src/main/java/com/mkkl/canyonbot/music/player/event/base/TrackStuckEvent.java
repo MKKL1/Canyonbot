@@ -1,7 +1,6 @@
 package com.mkkl.canyonbot.music.player.event.base;
 
 import com.mkkl.canyonbot.music.player.GuildMusicBotManager;
-import com.mkkl.canyonbot.music.player.MusicPlayerBase;
 import com.mkkl.canyonbot.music.player.event.MusicPlayerEvent;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import jakarta.annotation.Nullable;

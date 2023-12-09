@@ -12,14 +12,14 @@ import reactor.core.scheduler.Schedulers;
 import java.util.concurrent.TimeUnit;
 
 @Service
-public class SearchManager {
+public class SearchService {
 
     private static final int DEFAULT_LOADER_POOL_SIZE = 10;
     private static final int LOADER_QUEUE_CAPACITY = 5000;
 
     private final SourceRegistry sourceRegistry;
     private final Scheduler scheduler;
-    public SearchManager(SourceRegistry sourceRegistry) {
+    public SearchService(SourceRegistry sourceRegistry) {
         this.sourceRegistry = sourceRegistry;
         scheduler = Schedulers.fromExecutorService(
                 ExecutorTools.createEagerlyScalingExecutor(1,

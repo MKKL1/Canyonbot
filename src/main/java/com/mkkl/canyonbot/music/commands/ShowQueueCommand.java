@@ -3,7 +3,6 @@ package com.mkkl.canyonbot.music.commands;
 import com.mkkl.canyonbot.commands.BotCommand;
 import com.mkkl.canyonbot.commands.DefaultErrorHandler;
 import com.mkkl.canyonbot.commands.RegisterCommand;
-import com.mkkl.canyonbot.music.MusicPlayerManager;
 import com.mkkl.canyonbot.music.messages.QueueMessage;
 import com.mkkl.canyonbot.music.player.queue.TrackQueueElement;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
