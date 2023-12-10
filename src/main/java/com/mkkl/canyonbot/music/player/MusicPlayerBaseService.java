@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 //Interface for most basic music player functionality (without queue, voice channel management, etc.)
 @Service
 public interface MusicPlayerBaseService {
-    AudioProvider createAudioProvider();
+    AudioProvider getAudioProvider();
     AudioTrack getPlayingTrack();
 
     void registerEvents(GuildMusicBotManager guildMusicBotManager, MusicBotEventDispatcher eventDispatcher);

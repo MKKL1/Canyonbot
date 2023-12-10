@@ -14,18 +14,24 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class GuildTrackSchedulerService {
     //typedef would be nice here
+    //Still not sure about using map to manage different schedulers based on guild,
+    // it makes services independent of each other, but player's behavior is not easily predictable
     private final Map<Guild, TrackSchedulerData<TrackQueueElement>> trackSchedulerDataMap = new ConcurrentHashMap<>();
     private final MusicPlayerBaseService musicPlayerBaseService;
+    private final GuildTrackQueueService guildTrackQueueService;
 
-    public GuildTrackSchedulerService(MusicPlayerBaseService musicPlayerBaseService) {
+    public GuildTrackSchedulerService(MusicPlayerBaseService musicPlayerBaseService,
+                                      GuildTrackQueueService guildTrackQueueService) {
         this.musicPlayerBaseService = musicPlayerBaseService;
+        this.guildTrackQueueService = guildTrackQueueService;
     }
 
     public Mono<Void> startPlaying(Guild guild) { //Maybe we should use something like GuildSession to easily manage cleanup
         TrackSchedulerData<TrackQueueElement> trackSchedulerData = getTrackSchedulerData(guild);
         if (trackSchedulerData.getState() != TrackSchedulerData.State.STOPPED)
             return Mono.error(new IllegalStateException("Already playing"));
-        return Mono.justOrEmpty(trackSchedulerData.getQueue().dequeue())
+        return Mono.justOrEmpty(trackSchedulerData.getQueue()
+                        .dequeue())
                 .switchIfEmpty(Mono.error(new IllegalStateException("Queue is empty")))
                 .flatMap(trackQueueElement -> {
                     //TODO not sure if using setters with object is a good idea, it means this object is mutable, therefore it cannot be safely passed around
@@ -41,7 +47,8 @@ public class GuildTrackSchedulerService {
         if (trackSchedulerData.getState() == TrackSchedulerData.State.STOPPED)
             return Mono.error(new IllegalStateException("Already stopped"));
         return Mono.fromRunnable(() -> {
-            trackSchedulerData.getQueue().clear();
+            trackSchedulerData.getQueue()
+                    .clear();
             musicPlayerBaseService.stopTrack();
             //TODO I don't like this, but I am not sure how to represent it differently.
             // Maybe TrackQueueElement could have factory method that creates object representing empty track, like TrackQueueElement.empty()
@@ -69,7 +76,10 @@ public class GuildTrackSchedulerService {
                 .then(Mono.fromRunnable(musicPlayerBaseService::stopTrack));
     }
 
+    public
+
     private TrackSchedulerData<TrackQueueElement> getTrackSchedulerData(Guild guild) {
-        return trackSchedulerDataMap.computeIfAbsent(guild, guild1 -> new TrackSchedulerData<>(new SimpleTrackQueue()));
+        return trackSchedulerDataMap.computeIfAbsent(guild,
+                guild1 -> new TrackSchedulerData<>(guildTrackQueueService.getTrackQueue(guild1)));
     }
 }

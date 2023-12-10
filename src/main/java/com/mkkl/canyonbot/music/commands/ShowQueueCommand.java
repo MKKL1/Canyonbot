@@ -4,6 +4,7 @@ import com.mkkl.canyonbot.commands.BotCommand;
 import com.mkkl.canyonbot.commands.DefaultErrorHandler;
 import com.mkkl.canyonbot.commands.RegisterCommand;
 import com.mkkl.canyonbot.music.messages.QueueMessage;
+import com.mkkl.canyonbot.music.player.GuildTrackQueueService;
 import com.mkkl.canyonbot.music.player.queue.TrackQueueElement;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
@@ -12,14 +13,15 @@ import reactor.core.publisher.Mono;
 
 @RegisterCommand
 public class ShowQueueCommand extends BotCommand {
-    private final MusicPlayerManager musicPlayerManager;
+    private final GuildTrackQueueService guildTrackQueueService;
 
-    protected ShowQueueCommand(MusicPlayerManager musicPlayerManager, DefaultErrorHandler errorHandler) {
+    protected ShowQueueCommand(GuildTrackQueueService guildTrackQueueService,
+                               DefaultErrorHandler errorHandler) {
         super(ApplicationCommandRequest.builder()
                 .name("queue")
                 .description("Shows the current queue")
                 .build(), errorHandler);
-        this.musicPlayerManager = musicPlayerManager;
+        this.guildTrackQueueService = guildTrackQueueService;
     }
 
     @Override
@@ -28,9 +30,10 @@ public class ShowQueueCommand extends BotCommand {
                 .getGuild()
                 .flatMap(guild -> {
                     QueueMessage<TrackQueueElement> queueMessage = QueueMessage.builder()
-                            .setQueue(musicPlayerManager.getPlayer(guild)
-                                    .orElseThrow(() -> new IllegalStateException("Player of guild not found"))
-                                    .getTrackQueue())
+                            //TODO again no check for player not being used at all at given guild
+                            .setQueue(guildTrackQueueService.getTrackQueue(guild))
+//                                    .orElseThrow(() -> new IllegalStateException("Player of guild not found"))
+//                                    .getTrackQueue()
                             .setPage(0)
                             .setElementsPerPage(20)
                             .setCaller(event.getInteraction().getUser())

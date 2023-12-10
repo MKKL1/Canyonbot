@@ -53,18 +53,6 @@ public class TrackSchedulerData<T extends TrackQueueElement> {
 //        this.musicPlayerBaseService = musicPlayerBaseService;
 //    }
 
-
-
-
-
-    public Mono<Void> pause() {
-        return Mono.empty();
-    }
-
-    public Mono<Void> unpause() {
-        return Mono.empty();
-    }
-
     public enum State {
         PLAYING,
         PAUSED,

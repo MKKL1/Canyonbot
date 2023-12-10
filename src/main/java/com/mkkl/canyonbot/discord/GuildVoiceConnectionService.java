@@ -1,6 +1,5 @@
 package com.mkkl.canyonbot.discord;
 
-import com.mkkl.canyonbot.music.player.GuildMusicPlayer;
 import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.channel.AudioChannel;
 import discord4j.core.spec.AudioChannelJoinSpec;
@@ -33,5 +32,11 @@ public class GuildVoiceConnectionService {
 
     private Optional<VoiceConnection> getVoiceConnection(Guild guild) {
         return Optional.ofNullable(voiceConnections.get(guild));
+    }
+
+    public Mono<Boolean> isConnected(Guild guild) {
+        return getVoiceConnection(guild)
+                .map(VoiceConnection::isConnected)
+                .orElseGet(() -> Mono.just(false));
     }
 }

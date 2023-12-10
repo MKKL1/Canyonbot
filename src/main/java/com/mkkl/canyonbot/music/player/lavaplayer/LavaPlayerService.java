@@ -18,7 +18,7 @@ public class LavaPlayerService implements MusicPlayerBaseService {
     }
 
     @Override
-    public AudioProvider createAudioProvider() {
+    public AudioProvider getAudioProvider() {
         return audioProvider;
     }
 
