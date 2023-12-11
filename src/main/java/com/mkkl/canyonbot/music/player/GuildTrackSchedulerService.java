@@ -1,60 +1,78 @@
 package com.mkkl.canyonbot.music.player;
 
-import com.mkkl.canyonbot.music.player.queue.SimpleTrackQueue;
+import com.mkkl.canyonbot.music.player.event.base.TrackEndEvent;
+import com.mkkl.canyonbot.music.player.event.scheduler.QueueEmptyEvent;
+import com.mkkl.canyonbot.music.player.queue.TrackQueue;
 import com.mkkl.canyonbot.music.player.queue.TrackQueueElement;
 import com.mkkl.canyonbot.music.player.queue.TrackSchedulerData;
+import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
 import discord4j.core.object.entity.Guild;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class GuildTrackSchedulerService {
-    //typedef would be nice here
-    //Still not sure about using map to manage different schedulers based on guild,
-    // it makes services independent of each other, but player's behavior is not easily predictable
-    private final Map<Guild, TrackSchedulerData<TrackQueueElement>> trackSchedulerDataMap = new ConcurrentHashMap<>();
-    private final MusicPlayerBaseService musicPlayerBaseService;
-    private final GuildTrackQueueService guildTrackQueueService;
+    private final Map<Guild, TrackScheduler> trackSchedulerDataMap = new ConcurrentHashMap<>();
 
-    public GuildTrackSchedulerService(MusicPlayerBaseService musicPlayerBaseService,
-                                      GuildTrackQueueService guildTrackQueueService) {
-        this.musicPlayerBaseService = musicPlayerBaseService;
-        this.guildTrackQueueService = guildTrackQueueService;
+    public boolean createScheduler(GuildMusicBot guildMusicBot) {
+        if(trackSchedulerDataMap.containsKey(guildMusicBot.getGuild()))
+            return false;
+        TrackScheduler trackScheduler = new TrackScheduler(guildMusicBot);
+        trackSchedulerDataMap.put(guildMusicBot.getGuild(), trackScheduler);
+                guildMusicBot.getEventDispatcher().on(TrackEndEvent.class)
+                .flatMap(trackEndEvent -> {
+                    if (trackEndEvent.getEndReason() != AudioTrackEndReason.CLEANUP) {
+                        return Mono.fromRunnable(() -> {
+                            TrackQueueElement track = guildMusicBot.getTrackQueue().dequeue();
+                            trackScheduler.setCurrentTrack(track);
+                            if (track.isEmpty()) {
+                                guildMusicBot.getPlayer().playTrack(track.getAudioTrack());
+                            } else {
+                                guildMusicBot.getEventDispatcher().publish(new QueueEmptyEvent(guildMusicBot, guildMusicBot.getTrackQueue()));
+                                trackScheduler.setState(TrackScheduler.State.STOPPED);
+                            }
+                        });
+                    }
+                    trackScheduler.setState(TrackScheduler.State.STOPPED);
+                    trackScheduler.setCurrentTrack(TrackQueueElement.empty());
+                    //Cleanup
+                    //return guildMusicBotManager.leave();//TODO event here as well
+                    return Mono.empty();//TODO !!!leave
+                })
+                .subscribe();
+        return true;
     }
 
     public Mono<Void> startPlaying(Guild guild) { //Maybe we should use something like GuildSession to easily manage cleanup
-        TrackSchedulerData<TrackQueueElement> trackSchedulerData = getTrackSchedulerData(guild);
-        if (trackSchedulerData.getState() != TrackSchedulerData.State.STOPPED)
+        TrackScheduler trackScheduler = getOrThrow(guild);
+        if (trackScheduler.getState() != TrackScheduler.State.STOPPED)
             return Mono.error(new IllegalStateException("Already playing"));
-        return Mono.justOrEmpty(trackSchedulerData.getQueue()
-                        .dequeue())
+        return Mono.justOrEmpty(trackScheduler.getGuildMusicBot().getTrackQueue().dequeue())
                 .switchIfEmpty(Mono.error(new IllegalStateException("Queue is empty")))
                 .flatMap(trackQueueElement -> {
                     //TODO not sure if using setters with object is a good idea, it means this object is mutable, therefore it cannot be safely passed around
-                    trackSchedulerData.setCurrentTrack(trackQueueElement);
-                    musicPlayerBaseService.playTrack(trackQueueElement.getAudioTrack());
-                    trackSchedulerData.setState(TrackSchedulerData.State.PLAYING);
+                    trackScheduler.setCurrentTrack(trackQueueElement);
+                    trackScheduler.getGuildMusicBot().getPlayer().playTrack(trackQueueElement.getAudioTrack());
+                    trackScheduler.setState(TrackScheduler.State.PLAYING);
                     return Mono.empty();
                 });
     }
 
     public Mono<Void> stopPlaying(Guild guild) {
-        TrackSchedulerData<TrackQueueElement> trackSchedulerData = getTrackSchedulerData(guild);
-        if (trackSchedulerData.getState() == TrackSchedulerData.State.STOPPED)
+        TrackScheduler trackScheduler = getOrThrow(guild);
+        if (trackScheduler.getState() == TrackScheduler.State.STOPPED)
             return Mono.error(new IllegalStateException("Already stopped"));
         return Mono.fromRunnable(() -> {
-            trackSchedulerData.getQueue()
-                    .clear();
-            musicPlayerBaseService.stopTrack();
-            //TODO I don't like this, but I am not sure how to represent it differently.
-            // Maybe TrackQueueElement could have factory method that creates object representing empty track, like TrackQueueElement.empty()
+            trackScheduler.getGuildMusicBot().getTrackQueue().clear();
+            trackScheduler.getGuildMusicBot().getPlayer().stopTrack();
             //TODO The longer I look at this, the more I think that TrackQueue should be non-generic
-            trackSchedulerData.setCurrentTrack(null);
-            trackSchedulerData.setState(TrackSchedulerData.State.STOPPED);
+            trackScheduler.setCurrentTrack(TrackQueueElement.empty());
+            trackScheduler.setState(TrackScheduler.State.STOPPED);
             //TODO stop event
         });
     }
@@ -68,18 +86,29 @@ public class GuildTrackSchedulerService {
     }
 
     public Mono<TrackQueueElement> skip(Guild guild) {
-        TrackSchedulerData<TrackQueueElement> trackSchedulerData = getTrackSchedulerData(guild);
-        if (trackSchedulerData.getState() == TrackSchedulerData.State.STOPPED || trackSchedulerData.getCurrentTrack() == null) //Another null check
+        TrackScheduler trackScheduler = getOrThrow(guild);
+        if (trackScheduler.getState() == TrackScheduler.State.STOPPED || trackScheduler.getCurrentTrack().isEmpty())
             return Mono.error(new IllegalStateException("Nothing to skip"));
         //TODO skip event
-        return Mono.just(Objects.requireNonNull(trackSchedulerData.getCurrentTrack()))
-                .then(Mono.fromRunnable(musicPlayerBaseService::stopTrack));
+        return Mono.just(Objects.requireNonNull(trackScheduler.getCurrentTrack()))
+                .then(Mono.fromRunnable(() -> trackScheduler.getGuildMusicBot().getPlayer().stopTrack()));
     }
 
-    public
+    //TODO maybe we can create TrackSchedulerRepository to manage TrackScheduler instances
+    //TODO Ask someone if this is good idea
+    public TrackQueueElement getCurrentTrack(Guild guild) {
+        return getOrThrow(guild).getCurrentTrack();
+    }
 
-    private TrackSchedulerData<TrackQueueElement> getTrackSchedulerData(Guild guild) {
-        return trackSchedulerDataMap.computeIfAbsent(guild,
-                guild1 -> new TrackSchedulerData<>(guildTrackQueueService.getTrackQueue(guild1)));
+    public TrackScheduler.State getState(Guild guild) {
+        return getOrThrow(guild).getState();
+    }
+
+    private TrackScheduler getOrThrow(Guild guild) {
+        return getTrackSchedulerData(guild).orElseThrow(() -> new IllegalStateException("No scheduler for guild"));
+    }
+
+    private Optional<TrackScheduler> getTrackSchedulerData(Guild guild) {
+        return Optional.ofNullable(trackSchedulerDataMap.get(guild));
     }
 }

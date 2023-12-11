@@ -1,6 +1,6 @@
 package com.mkkl.canyonbot.music.player;
 
-import com.mkkl.canyonbot.music.player.lavaplayer.LavaPlayerService;
+import com.mkkl.canyonbot.music.player.lavaplayer.LavaPlayer;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager;
 import org.springframework.context.annotation.Bean;
@@ -15,7 +15,7 @@ public class MusicPlayerConfiguration {
     }
 
     @Bean
-    public MusicPlayerBaseService musicPlayerBaseService() {
-        return new LavaPlayerService(audioPlayerManager.createPlayer());
+    public MusicPlayerBaseFactory musicPlayerBaseFactory() {
+        return () -> new LavaPlayer(audioPlayerManager.createPlayer());
     }
 }

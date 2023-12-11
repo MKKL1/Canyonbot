@@ -1,25 +1,12 @@
 package com.mkkl.canyonbot.music.player.queue;
 
-import com.mkkl.canyonbot.music.player.GuildMusicBotManager;
-import com.mkkl.canyonbot.music.player.MusicBotEventDispatcher;
-import com.mkkl.canyonbot.music.player.MusicPlayerBaseService;
-import com.mkkl.canyonbot.music.player.event.base.TrackEndEvent;
-import com.mkkl.canyonbot.music.player.event.scheduler.QueueEmptyEvent;
-import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
 import jakarta.annotation.Nullable;
 import lombok.Data;
-import lombok.Getter;
-import reactor.core.publisher.Mono;
-
-import java.util.Objects;
 
 @Data
 public class TrackSchedulerData<T extends TrackQueueElement> {
     //TODO replace with object that holds info about currently played track like current time
-    @Nullable
-    private T currentTrack;
-    private final TrackQueue<T> queue;
-    private State state = State.STOPPED;
+
 
     //TODO right now if TrackScheduler::stop is called, TrackEndEvent, QueueEmptyEvent and SchedulerStopEvent are published, which may lead to misunderstandings
 

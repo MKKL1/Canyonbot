@@ -8,9 +8,9 @@ import com.mkkl.canyonbot.commands.exceptions.ReplyMessageException;
 import com.mkkl.canyonbot.discord.GuildVoiceConnectionService;
 import com.mkkl.canyonbot.music.messages.AudioTrackMessage;
 import com.mkkl.canyonbot.music.messages.ShortPlaylistMessage;
-import com.mkkl.canyonbot.music.player.GuildTrackQueueService;
 import com.mkkl.canyonbot.music.player.GuildTrackSchedulerService;
-import com.mkkl.canyonbot.music.player.MusicPlayerBaseService;
+import com.mkkl.canyonbot.music.player.MusicPlayerBase;
+import com.mkkl.canyonbot.music.player.TrackScheduler;
 import com.mkkl.canyonbot.music.player.queue.TrackQueueElement;
 import com.mkkl.canyonbot.music.player.queue.TrackSchedulerData;
 import com.mkkl.canyonbot.music.search.SearchService;
@@ -37,7 +37,6 @@ import discord4j.voice.VoiceConnection;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
 import java.util.ArrayList;
@@ -52,7 +51,7 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
     private final GuildTrackSchedulerService trackSchedulerService;
     private final GuildTrackQueueService trackQueueService;
     private final GuildVoiceConnectionService voiceConnectionService;
-    private final MusicPlayerBaseService musicPlayerBaseService;
+    private final MusicPlayerBase musicPlayerBaseService;
 
     //private CommandOptionCompletionManager completionManager;
     public PlayCommand(SearchService searchService,
@@ -60,7 +59,7 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                        GuildTrackSchedulerService trackSchedulerService,
                        GuildTrackQueueService trackQueueService,
                        GuildVoiceConnectionService voiceConnectionService,
-                       MusicPlayerBaseService musicPlayerBaseService,
+                       MusicPlayerBase musicPlayerBaseService,
                        DefaultErrorHandler errorHandler) {
         super(ApplicationCommandRequest.builder()
                 .name("play")
@@ -237,9 +236,9 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                             .flatMap(audioChannel -> voiceConnectionService.join(guild, , audioChannel));
 
                     });
-                Mono<Void> startMono = Mono.just(trackSchedulerService)
-                        .filter(scheduler -> scheduler.getState() == TrackSchedulerData.State.STOPPED)
-                        .flatMap(TrackSchedulerData::start);
+                Mono<Void> startMono = trackSchedulerService.getState(guild) == TrackScheduler.State.STOPPED
+                    ? trackSchedulerService.startPlaying(guild)
+                    : Mono.empty();
                 return enqueueMono.then(joinMono)
                         .then(startMono);
             });

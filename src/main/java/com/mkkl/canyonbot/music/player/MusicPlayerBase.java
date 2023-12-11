@@ -5,12 +5,11 @@ import discord4j.voice.AudioProvider;
 import org.springframework.stereotype.Service;
 
 //Interface for most basic music player functionality (without queue, voice channel management, etc.)
-@Service
-public interface MusicPlayerBaseService {
+public interface MusicPlayerBase {
     AudioProvider getAudioProvider();
     AudioTrack getPlayingTrack();
 
-    void registerEvents(GuildMusicBotManager guildMusicBotManager, MusicBotEventDispatcher eventDispatcher);
+    void registerEvents(GuildMusicBot guildMusicBotManager, MusicBotEventDispatcher eventDispatcher);
 
     void playTrack(AudioTrack track);
 

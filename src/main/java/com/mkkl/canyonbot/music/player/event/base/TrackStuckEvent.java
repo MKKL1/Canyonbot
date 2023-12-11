@@ -1,6 +1,6 @@
 package com.mkkl.canyonbot.music.player.event.base;
 
-import com.mkkl.canyonbot.music.player.GuildMusicBotManager;
+import com.mkkl.canyonbot.music.player.GuildMusicBot;
 import com.mkkl.canyonbot.music.player.event.MusicPlayerEvent;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import jakarta.annotation.Nullable;
@@ -13,7 +13,7 @@ public class TrackStuckEvent extends MusicPlayerEvent {
     @Nullable
     private final StackTraceElement[] stackTrace;
 
-    public TrackStuckEvent(GuildMusicBotManager guildMusicBotManager, AudioTrack track, long thresholdMs, StackTraceElement[] stackTrace) {
+    public TrackStuckEvent(GuildMusicBot guildMusicBotManager, AudioTrack track, long thresholdMs, StackTraceElement[] stackTrace) {
         super(guildMusicBotManager);
         this.track = track;
         this.thresholdMs = thresholdMs;
