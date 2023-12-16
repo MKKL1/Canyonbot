@@ -54,20 +54,20 @@ public class QueueMessage<T extends TrackQueueElement> implements ResponseMessag
         return embedBuilder.build();
     }
 
-    public ActionRow getActionRow() {
-        TempListenableButton nextPageButton = TempListenableButton.builder(Button.secondary("nextPage", "Next page"))
-                .setButtonClickAction(event -> {
-                    page++;
-                    event.getMessage().get().getData().
-                    return event.edit("Queue");
-                })
-                .setTimeoutAction(throwable -> {
-                    System.out.println("timeout");
-                    return Mono.empty();
-                })
-                .build();
-        nextPageButton.register(Duration.ofSeconds(30))
-                .subscribe();//TODO subscribing here means that errors are not caught
-        return ActionRow.of(nextPageButton.getButton());
-    }
+//    public ActionRow getActionRow() {
+//        TempListenableButton nextPageButton = TempListenableButton.builder(Button.secondary("nextPage", "Next page"))
+//                .setButtonClickAction(event -> {
+//                    page++;
+//                    event.getMessage().get().getData().
+//                    return event.edit("Queue");
+//                })
+//                .setTimeoutAction(throwable -> {
+//                    System.out.println("timeout");
+//                    return Mono.empty();
+//                })
+//                .build();
+//        nextPageButton.register(Duration.ofSeconds(30))
+//                .subscribe();//TODO subscribing here means that errors are not caught
+//        return ActionRow.of(nextPageButton.getButton());
+//    }
 }

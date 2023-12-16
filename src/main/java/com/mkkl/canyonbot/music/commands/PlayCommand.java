@@ -8,9 +8,7 @@ import com.mkkl.canyonbot.commands.exceptions.ReplyMessageException;
 import com.mkkl.canyonbot.discord.GuildVoiceConnectionService;
 import com.mkkl.canyonbot.music.messages.AudioTrackMessage;
 import com.mkkl.canyonbot.music.messages.ShortPlaylistMessage;
-import com.mkkl.canyonbot.music.player.GuildTrackSchedulerService;
-import com.mkkl.canyonbot.music.player.MusicPlayerBase;
-import com.mkkl.canyonbot.music.player.TrackScheduler;
+import com.mkkl.canyonbot.music.player.*;
 import com.mkkl.canyonbot.music.player.queue.TrackQueueElement;
 import com.mkkl.canyonbot.music.player.queue.TrackSchedulerData;
 import com.mkkl.canyonbot.music.search.SearchService;
@@ -24,6 +22,7 @@ import discord4j.core.object.VoiceState;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.command.ApplicationCommandOption;
+import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.PartialMember;
 import discord4j.core.object.entity.channel.AudioChannel;
@@ -38,6 +37,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+import reactor.util.function.Tuples;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -49,17 +49,15 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
     private final SearchService searchService;
     private final SourceRegistry sourceRegistry;
     private final GuildTrackSchedulerService trackSchedulerService;
-    private final GuildTrackQueueService trackQueueService;
     private final GuildVoiceConnectionService voiceConnectionService;
-    private final MusicPlayerBase musicPlayerBaseService;
+    private final GuildMusicBotService guildMusicBotService;
 
     //private CommandOptionCompletionManager completionManager;
     public PlayCommand(SearchService searchService,
                        SourceRegistry sourceRegistry,
                        GuildTrackSchedulerService trackSchedulerService,
-                       GuildTrackQueueService trackQueueService,
+                       GuildMusicBotService guildMusicBotService,
                        GuildVoiceConnectionService voiceConnectionService,
-                       MusicPlayerBase musicPlayerBaseService,
                        DefaultErrorHandler errorHandler) {
         super(ApplicationCommandRequest.builder()
                 .name("play")
@@ -105,7 +103,7 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
         //TODO autocompletion for source IS NOT NEEDED. It is already handled by discord using choices
         //completionManager.addOption("source", new CommandOptionCompletion(sourceRegistry.sourceSuggestionOptions()));
         this.trackSchedulerService = trackSchedulerService;
-        this.trackQueueService = trackQueueService;
+        this.guildMusicBotService = guildMusicBotService;
         this.voiceConnectionService = voiceConnectionService;
     }
 
@@ -195,7 +193,8 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
     }
 
     private Mono<Message> handleTrack(CommandContext context, SearchResult searchResult) {
-        AudioTrack track = searchResult.getTracks().get(0);
+        assert searchResult.getTracks() != null;
+        AudioTrack track = searchResult.getTracks().getFirst();
         //First adds track to queue and then sends confirmation message
         return playTrack(context, track)
                 .then(context.event.createFollowup(InteractionFollowupCreateSpec.builder()
@@ -214,9 +213,14 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
     private Mono<Void> playTrack(CommandContext context, AudioTrack track) {
         return context.event.getInteraction()
             .getGuild()
-            .flatMap(guild -> {
-                Mono<Void> enqueueMono = Mono.fromRunnable(() -> trackQueueService.getTrackQueue(guild)
-                    .enqueue(new TrackQueueElement(track, context.event.getInteraction().getUser())));
+            .zipWhen(guild -> Mono.just(guildMusicBotService.getGuildMusicBot(guild)
+                    .orElse(guildMusicBotService.createGuildMusicBot(guild))), Tuples::of)
+            .flatMap(tuple -> {
+                Guild guild = tuple.getT1();
+                GuildMusicBot guildMusicBot = tuple.getT2();
+
+                Mono<Void> enqueueMono = Mono.fromRunnable(() -> guildMusicBot.getTrackQueue()
+                        .enqueue(new TrackQueueElement(track, context.event.getInteraction().getUser())));
 
                 Mono<VoiceConnection> joinMono = voiceConnectionService.isConnected(guild)
                     .flatMap(isConnected -> {
@@ -233,14 +237,17 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                                     return Mono.error(new ReplyMessageException(channel.getMention() + " is not Audio Channel"));
                                 return Mono.just((AudioChannel) channel);
                             })
-                            .flatMap(audioChannel -> voiceConnectionService.join(guild, , audioChannel));
+                            .flatMap(audioChannel -> voiceConnectionService.join(guild, guildMusicBot.getPlayer().getAudioProvider(), audioChannel));
 
                     });
-                Mono<Void> startMono = trackSchedulerService.getState(guild) == TrackScheduler.State.STOPPED
+
+
+                Mono<Void> createAndStartMono = Mono.fromRunnable(() -> trackSchedulerService.createScheduler(guildMusicBot))
+                .then(Mono.defer(() -> trackSchedulerService.getState(guild) == TrackScheduler.State.STOPPED
                     ? trackSchedulerService.startPlaying(guild)
-                    : Mono.empty();
+                    : Mono.empty()));
                 return enqueueMono.then(joinMono)
-                        .then(startMono);
+                        .then(createAndStartMono);
             });
     }
 
