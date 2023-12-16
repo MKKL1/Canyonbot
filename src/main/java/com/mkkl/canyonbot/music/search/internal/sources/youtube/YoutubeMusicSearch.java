@@ -1,8 +1,8 @@
 package com.mkkl.canyonbot.music.search.internal.sources.youtube;
 
-import com.mkkl.canyonbot.music.search.SearchResult;
 import com.mkkl.canyonbot.music.search.internal.sources.RegisterSource;
 import com.mkkl.canyonbot.music.search.internal.sources.SearchSource;
+import com.mkkl.canyonbot.music.search.SearchResult;
 import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeAudioSourceManager;
 
 //This is almost the same as YoutubeSearch, only difference is route string.

@@ -5,24 +5,24 @@ import com.mkkl.canyonbot.commands.BotCommand;
 import com.mkkl.canyonbot.commands.DefaultErrorHandler;
 import com.mkkl.canyonbot.commands.RegisterCommand;
 import com.mkkl.canyonbot.commands.exceptions.ReplyMessageException;
-import com.mkkl.canyonbot.music.MusicPlayerManager;
+import com.mkkl.canyonbot.discord.GuildVoiceConnectionService;
 import com.mkkl.canyonbot.music.messages.AudioTrackMessage;
 import com.mkkl.canyonbot.music.messages.ShortPlaylistMessage;
+import com.mkkl.canyonbot.music.player.*;
 import com.mkkl.canyonbot.music.player.queue.TrackQueueElement;
-import com.mkkl.canyonbot.music.player.queue.TrackScheduler;
-import com.mkkl.canyonbot.music.search.SearchManager;
+import com.mkkl.canyonbot.music.player.queue.TrackSchedulerData;
+import com.mkkl.canyonbot.music.search.SearchService;
 import com.mkkl.canyonbot.music.search.SearchResult;
 import com.mkkl.canyonbot.music.search.SourceRegistry;
 import com.mkkl.canyonbot.music.search.internal.sources.SearchSource;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
-import discord4j.core.DiscordClient;
 import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.VoiceState;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.command.ApplicationCommandOption;
-import discord4j.core.object.entity.Member;
+import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.PartialMember;
 import discord4j.core.object.entity.channel.AudioChannel;
@@ -36,26 +36,28 @@ import discord4j.voice.VoiceConnection;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
+import reactor.util.function.Tuples;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
 
 @RegisterCommand
 public class PlayCommand extends BotCommand implements AutoCompleteCommand {
-    private final SearchManager searchManager;
+    private final SearchService searchService;
     private final SourceRegistry sourceRegistry;
-    private final MusicPlayerManager musicPlayerManager;
-    private final Scheduler scheduler = Schedulers.boundedElastic();
+    private final GuildTrackSchedulerService trackSchedulerService;
+    private final GuildVoiceConnectionService voiceConnectionService;
+    private final GuildMusicBotService guildMusicBotService;
 
     //private CommandOptionCompletionManager completionManager;
-    public PlayCommand(SearchManager searchManager,
+    public PlayCommand(SearchService searchService,
                        SourceRegistry sourceRegistry,
-                       MusicPlayerManager musicPlayerManager,
+                       GuildTrackSchedulerService trackSchedulerService,
+                       GuildMusicBotService guildMusicBotService,
+                       GuildVoiceConnectionService voiceConnectionService,
                        DefaultErrorHandler errorHandler) {
         super(ApplicationCommandRequest.builder()
                 .name("play")
@@ -95,12 +97,14 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                         .build())
                 .build(), errorHandler);
         this.sourceRegistry = sourceRegistry;
-        this.searchManager = searchManager;
+        this.searchService = searchService;
         //completionManager = new CommandOptionCompletionManager();
         //TODO autocompletion for query. This should work by searching the index of query terms and returning the most popular ones
         //TODO autocompletion for source IS NOT NEEDED. It is already handled by discord using choices
         //completionManager.addOption("source", new CommandOptionCompletion(sourceRegistry.sourceSuggestionOptions()));
-        this.musicPlayerManager = musicPlayerManager;
+        this.trackSchedulerService = trackSchedulerService;
+        this.guildMusicBotService = guildMusicBotService;
+        this.voiceConnectionService = voiceConnectionService;
     }
 
     @Override
@@ -135,9 +139,9 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
         Mono<SearchResult> searchResultMono;
         String query = context.query.orElseThrow(() -> new ReplyMessageException("Query not found"));
         if (context.sourceId.isEmpty())
-            searchResultMono = searchManager.search(query);
+            searchResultMono = searchService.search(query);
         else
-            searchResultMono = searchManager.search(query, sourceRegistry.getSource(context.sourceId.get())
+            searchResultMono = searchService.search(query, sourceRegistry.getSource(context.sourceId.get())
                     .orElseThrow(() -> new ReplyMessageException("Source not found")));
 
         return searchResultMono
@@ -189,7 +193,8 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
     }
 
     private Mono<Message> handleTrack(CommandContext context, SearchResult searchResult) {
-        AudioTrack track = searchResult.getTracks().get(0);
+        assert searchResult.getTracks() != null;
+        AudioTrack track = searchResult.getTracks().getFirst();
         //First adds track to queue and then sends confirmation message
         return playTrack(context, track)
                 .then(context.event.createFollowup(InteractionFollowupCreateSpec.builder()
@@ -208,11 +213,16 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
     private Mono<Void> playTrack(CommandContext context, AudioTrack track) {
         return context.event.getInteraction()
             .getGuild()
-            .flatMap(guild -> Mono.just(musicPlayerManager.getOrCreatePlayer(guild)))
-            .flatMap(guildMng -> {
-                Mono<Void> enqueueMono = Mono.fromRunnable(() -> guildMng.getTrackQueue()
-                    .enqueue(new TrackQueueElement(track, context.event.getInteraction().getUser())));
-                Mono<VoiceConnection> joinMono = guildMng.isConnected()
+            .zipWhen(guild -> Mono.just(guildMusicBotService.getGuildMusicBot(guild)
+                    .orElse(guildMusicBotService.createGuildMusicBot(guild))), Tuples::of)
+            .flatMap(tuple -> {
+                Guild guild = tuple.getT1();
+                GuildMusicBot guildMusicBot = tuple.getT2();
+
+                Mono<Void> enqueueMono = Mono.fromRunnable(() -> guildMusicBot.getTrackQueue()
+                        .enqueue(new TrackQueueElement(track, context.event.getInteraction().getUser())));
+
+                Mono<VoiceConnection> joinMono = voiceConnectionService.isConnected(guild)
                     .flatMap(isConnected -> {
                         if (isConnected) return Mono.empty();
 
@@ -227,14 +237,17 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                                     return Mono.error(new ReplyMessageException(channel.getMention() + " is not Audio Channel"));
                                 return Mono.just((AudioChannel) channel);
                             })
-                            .flatMap(guildMng::join);
+                            .flatMap(audioChannel -> voiceConnectionService.join(guild, guildMusicBot.getPlayer().getAudioProvider(), audioChannel));
 
                     });
-                Mono<Void> startMono = Mono.just(guildMng.getTrackScheduler())
-                        .filter(scheduler -> scheduler.getState() == TrackScheduler.State.STOPPED)
-                        .flatMap(TrackScheduler::start);
+
+
+                Mono<Void> createAndStartMono = Mono.fromRunnable(() -> trackSchedulerService.createScheduler(guildMusicBot))
+                .then(Mono.defer(() -> trackSchedulerService.getState(guild) == TrackScheduler.State.STOPPED
+                    ? trackSchedulerService.startPlaying(guild)
+                    : Mono.empty()));
                 return enqueueMono.then(joinMono)
-                        .then(startMono);
+                        .then(createAndStartMono);
             });
     }
 

@@ -1,16 +1,15 @@
 package com.mkkl.canyonbot.music.player;
 
-import com.mkkl.canyonbot.music.player.event.MusicPlayerEvent;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import discord4j.voice.AudioProvider;
-import reactor.core.publisher.FluxSink;
+import org.springframework.stereotype.Service;
 
 //Interface for most basic music player functionality (without queue, voice channel management, etc.)
 public interface MusicPlayerBase {
-    AudioProvider createAudioProvider();
+    AudioProvider getAudioProvider();
     AudioTrack getPlayingTrack();
 
-    void registerEvents(GuildMusicBotManager guildMusicBotManager, MusicBotEventDispatcher eventDispatcher);
+    void registerEvents(GuildMusicBot guildMusicBotManager, MusicBotEventDispatcher eventDispatcher);
 
     void playTrack(AudioTrack track);
 

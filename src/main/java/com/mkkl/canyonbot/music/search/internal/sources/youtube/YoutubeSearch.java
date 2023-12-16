@@ -1,9 +1,8 @@
 package com.mkkl.canyonbot.music.search.internal.sources.youtube;
 
-import com.mkkl.canyonbot.commands.completion.SuggestionOption;
-import com.mkkl.canyonbot.music.search.SearchResult;
 import com.mkkl.canyonbot.music.search.internal.sources.RegisterSource;
 import com.mkkl.canyonbot.music.search.internal.sources.SearchSource;
+import com.mkkl.canyonbot.music.search.SearchResult;
 import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeAudioSourceManager;
 
 @RegisterSource(priority = 1)

@@ -1,6 +1,6 @@
 package com.mkkl.canyonbot.music.player.lavaplayer;
 
-import com.mkkl.canyonbot.music.player.GuildMusicBotManager;
+import com.mkkl.canyonbot.music.player.GuildMusicBot;
 import com.mkkl.canyonbot.music.player.MusicBotEventDispatcher;
 import com.mkkl.canyonbot.music.player.MusicPlayerBase;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
@@ -18,7 +18,7 @@ public class LavaPlayer implements MusicPlayerBase {
     }
 
     @Override
-    public AudioProvider createAudioProvider() {
+    public AudioProvider getAudioProvider() {
         return audioProvider;
     }
 
@@ -28,7 +28,7 @@ public class LavaPlayer implements MusicPlayerBase {
     }
 
     @Override
-    public void registerEvents(GuildMusicBotManager guildMusicBotManager, MusicBotEventDispatcher eventDispatcher) {
+    public void registerEvents(GuildMusicBot guildMusicBotManager, MusicBotEventDispatcher eventDispatcher) {
         audioPlayer.addListener(new LavaPlayerEventAdapter(guildMusicBotManager, eventDispatcher));
     }
 

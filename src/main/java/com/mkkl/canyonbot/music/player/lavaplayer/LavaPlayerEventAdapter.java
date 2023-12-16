@@ -1,9 +1,7 @@
 package com.mkkl.canyonbot.music.player.lavaplayer;
 
-import com.mkkl.canyonbot.music.player.GuildMusicBotManager;
+import com.mkkl.canyonbot.music.player.GuildMusicBot;
 import com.mkkl.canyonbot.music.player.MusicBotEventDispatcher;
-import com.mkkl.canyonbot.music.player.MusicPlayerBase;
-import com.mkkl.canyonbot.music.player.event.MusicPlayerEvent;
 import com.mkkl.canyonbot.music.player.event.base.*;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import com.sedmelluq.discord.lavaplayer.player.event.AudioEvent;
@@ -11,13 +9,12 @@ import com.sedmelluq.discord.lavaplayer.player.event.AudioEventAdapter;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
-import reactor.core.publisher.FluxSink;
 
 public class LavaPlayerEventAdapter extends AudioEventAdapter {
-    private final GuildMusicBotManager guildMusicBotManager;
+    private final GuildMusicBot guildMusicBotManager;
     private final MusicBotEventDispatcher eventDispatcher;
 
-    public LavaPlayerEventAdapter(GuildMusicBotManager guildMusicBotManager, MusicBotEventDispatcher eventDispatcher) {
+    public LavaPlayerEventAdapter(GuildMusicBot guildMusicBotManager, MusicBotEventDispatcher eventDispatcher) {
         this.guildMusicBotManager = guildMusicBotManager;
         this.eventDispatcher = eventDispatcher;
     }
