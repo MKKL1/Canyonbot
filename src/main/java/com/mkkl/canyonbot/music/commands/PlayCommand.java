@@ -15,6 +15,7 @@ import com.mkkl.canyonbot.music.search.SearchService;
 import com.mkkl.canyonbot.music.search.SearchResult;
 import com.mkkl.canyonbot.music.search.SourceRegistry;
 import com.mkkl.canyonbot.music.search.internal.sources.SearchSource;
+import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
@@ -51,6 +52,7 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
     private final GuildTrackSchedulerService trackSchedulerService;
     private final GuildVoiceConnectionService voiceConnectionService;
     private final GuildMusicBotService guildMusicBotService;
+    private final GuildPlaylistMessageService guildPlaylistMessageService;
 
     //private CommandOptionCompletionManager completionManager;
     public PlayCommand(SearchService searchService,
@@ -58,7 +60,8 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                        GuildTrackSchedulerService trackSchedulerService,
                        GuildMusicBotService guildMusicBotService,
                        GuildVoiceConnectionService voiceConnectionService,
-                       DefaultErrorHandler errorHandler) {
+                       DefaultErrorHandler errorHandler,
+                       GuildPlaylistMessageService guildPlaylistMessageService) {
         super(ApplicationCommandRequest.builder()
                 .name("play")
                 .description("Play a song")
@@ -105,6 +108,7 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
         this.trackSchedulerService = trackSchedulerService;
         this.guildMusicBotService = guildMusicBotService;
         this.voiceConnectionService = voiceConnectionService;
+        this.guildPlaylistMessageService = guildPlaylistMessageService;
     }
 
     @Override
@@ -169,27 +173,29 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
         //TODO this way of building message is too complicated and not clear, it should be refactored
         assert searchResult.getPlaylists() != null;
         ShortPlaylistMessage shortPlaylistMessage = ShortPlaylistMessage.builder()
-                .setPlaylist(searchResult.getPlaylists()
-                        .getFirst())
+                .setPlaylist(searchResult.getPlaylists().getFirst())
                 .setSource(searchResult.getSource())
-                .setUser(context.event.getInteraction()
-                        .getUser())
+                .setUser(context.event.getInteraction().getUser())
                 .build();
-
+        AudioPlaylist audioPlaylist = searchResult.getPlaylists().getFirst();
         return context.event.createFollowup(InteractionFollowupCreateSpec.builder()
                 .addEmbed(AudioTrackMessage.builder()
-                        .setAudioTrack(searchResult.getPlaylists()
-                                .getFirst()
-                                .getSelectedTrack())
+                        .setAudioTrack(audioPlaylist.getSelectedTrack())
                         .setSource(searchResult.getSource())
                         .setQuery(context.query.orElseThrow(() -> new IllegalStateException("Query not found"))) //Should never happen
-                        .setUser(context.event.getInteraction()
-                                .getUser())
+                        .setUser(context.event.getInteraction().getUser())
                         .build()
                         .getSpec())
                 .addEmbed(shortPlaylistMessage.getSpec())
                 .addComponent(shortPlaylistMessage.getActionRow())
-                .build());
+                .build())
+                .zipWhen(message -> context.event.getInteraction().getGuild(), Tuples::of)
+                .flatMap(tuple -> {
+                    Message message = tuple.getT1();
+                    Guild guild = tuple.getT2();
+                    guildPlaylistMessageService.add(guild, message, audioPlaylist);
+                    return Mono.just(message);
+                });
     }
 
     private Mono<Message> handleTrack(CommandContext context, SearchResult searchResult) {
@@ -209,7 +215,6 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                         .build()));
     }
 
-    //TODO this part of code requires cleanup, there are too many nested monos
     private Mono<Void> playTrack(CommandContext context, AudioTrack track) {
         return context.event.getInteraction()
             .getGuild()

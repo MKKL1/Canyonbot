@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 
+//TODO rename to GuildMusicSession?
 @AllArgsConstructor
 @Getter
 @Builder
