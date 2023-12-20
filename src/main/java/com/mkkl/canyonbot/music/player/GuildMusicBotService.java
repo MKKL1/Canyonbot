@@ -1,5 +1,7 @@
 package com.mkkl.canyonbot.music.player;
 
+import com.mkkl.canyonbot.music.player.event.GuildPlayerCreationEvent;
+import com.mkkl.canyonbot.music.player.event.PlayerEventPublisher;
 import com.mkkl.canyonbot.music.player.queue.SimpleTrackQueue;
 import discord4j.core.object.entity.Guild;
 import org.springframework.stereotype.Service;
@@ -11,14 +13,18 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class GuildMusicBotService {
     private final MusicPlayerBaseFactory musicPlayerBaseFactory;
+    private final PlayerEventPublisher publisher;
     private final Map<Guild, GuildMusicBot> guildMusicBotMap = new ConcurrentHashMap<>();
 
-    public GuildMusicBotService(MusicPlayerBaseFactory musicPlayerBaseFactory) {
+    public GuildMusicBotService(MusicPlayerBaseFactory musicPlayerBaseFactory, PlayerEventPublisher publisher) {
         this.musicPlayerBaseFactory = musicPlayerBaseFactory;
+        this.publisher = publisher;
     }
 
     //TODO this is more of a Repository responsibility than Service
     public GuildMusicBot createGuildMusicBot(Guild guild) {
+        if(guildMusicBotMap.containsKey(guild))
+            return guildMusicBotMap.get(guild); //TODO there is no feedback whether or not GuildMusicBot is created
         MusicPlayerBase musicPlayerBase = musicPlayerBaseFactory.create();
         GuildMusicBot guildMusicBot = GuildMusicBot.builder()
                 .guild(guild)
@@ -27,6 +33,7 @@ public class GuildMusicBotService {
                 .trackQueue(new SimpleTrackQueue())
                 .build();
         guildMusicBotMap.put(guild, guildMusicBot);
+        publisher.publish(new GuildPlayerCreationEvent(this, guildMusicBot));
         return guildMusicBot;
     }
 

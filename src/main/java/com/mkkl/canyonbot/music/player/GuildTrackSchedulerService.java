@@ -1,5 +1,6 @@
 package com.mkkl.canyonbot.music.player;
 
+import com.mkkl.canyonbot.music.player.event.GuildPlayerCreationEvent;
 import com.mkkl.canyonbot.music.player.event.base.TrackEndEvent;
 import com.mkkl.canyonbot.music.player.event.scheduler.QueueEmptyEvent;
 import com.mkkl.canyonbot.music.player.queue.TrackQueue;
@@ -7,6 +8,9 @@ import com.mkkl.canyonbot.music.player.queue.TrackQueueElement;
 import com.mkkl.canyonbot.music.player.queue.TrackSchedulerData;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
 import discord4j.core.object.entity.Guild;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
@@ -16,15 +20,18 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
+@Slf4j
 public class GuildTrackSchedulerService {
     private final Map<Guild, TrackScheduler> trackSchedulerDataMap = new ConcurrentHashMap<>();
 
-    public boolean createScheduler(GuildMusicBot guildMusicBot) {
+    @EventListener
+    private void handleGuildPlayerCreation(GuildPlayerCreationEvent event) {
+        GuildMusicBot guildMusicBot = event.getGuildMusicBot();
         if(trackSchedulerDataMap.containsKey(guildMusicBot.getGuild()))
-            return false;
+            return;
         TrackScheduler trackScheduler = new TrackScheduler(guildMusicBot);
         trackSchedulerDataMap.put(guildMusicBot.getGuild(), trackScheduler);
-                guildMusicBot.getEventDispatcher().on(TrackEndEvent.class)
+        guildMusicBot.getEventDispatcher().on(TrackEndEvent.class)
                 .flatMap(trackEndEvent -> {
                     if (trackEndEvent.getEndReason() != AudioTrackEndReason.CLEANUP) {
                         return Mono.fromRunnable(() -> {
@@ -45,10 +52,11 @@ public class GuildTrackSchedulerService {
                     return Mono.empty();//TODO !!!leave
                 })
                 .subscribe();
-        return true;
+        log.info("Created track scheduler for guild " + guildMusicBot.getGuild().getName());
     }
 
     public Mono<Void> startPlaying(Guild guild) { //Maybe we should use something like GuildSession to easily manage cleanup
+        //TODO remove checks outside of mono
         TrackScheduler trackScheduler = getOrThrow(guild);
         if (trackScheduler.getState() != TrackScheduler.State.STOPPED)
             return Mono.error(new IllegalStateException("Already playing"));
@@ -111,4 +119,6 @@ public class GuildTrackSchedulerService {
     private Optional<TrackScheduler> getTrackSchedulerData(Guild guild) {
         return Optional.ofNullable(trackSchedulerDataMap.get(guild));
     }
+
+
 }

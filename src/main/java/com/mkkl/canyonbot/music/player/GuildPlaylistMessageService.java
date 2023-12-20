@@ -1,8 +1,11 @@
 package com.mkkl.canyonbot.music.player;
 
+import com.mkkl.canyonbot.music.player.event.GuildPlayerCreationEvent;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Message;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -10,14 +13,16 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
+@Slf4j
 public class GuildPlaylistMessageService {
 
     //TODO use redis
-    private Map<Guild, Map<Message, AudioPlaylist>> guildMap = new ConcurrentHashMap<>();
+    private final Map<Guild, Map<Message, AudioPlaylist>> guildMap = new ConcurrentHashMap<>();
 
-    //TODO create container on GuildMusicBot creation event
-    public void createContainer(GuildMusicBot guildMusicBot) {
-        guildMap.put(guildMusicBot.getGuild(), new ConcurrentHashMap<>());
+    @EventListener
+    private void createContainer(GuildPlayerCreationEvent event) {
+        guildMap.put(event.getGuildMusicBot().getGuild(), new ConcurrentHashMap<>());
+        log.info("Created playlist container for " + event.getGuildMusicBot().getGuild().getName());
         //TODO add cleanup
     }
 

@@ -1,5 +1,6 @@
 package com.mkkl.canyonbot.commands.exceptions;
 
+//TODO this should probably be decorator
 public class ReplyMessageException extends RuntimeException implements ResponseMessageText {
     private final String text;
     public ReplyMessageException(String text) {
