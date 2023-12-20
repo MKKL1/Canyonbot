@@ -55,22 +55,20 @@ public class GuildTrackSchedulerService {
         log.info("Created track scheduler for guild " + guildMusicBot.getGuild().getName());
     }
 
-    public Mono<Void> startPlaying(Guild guild) { //Maybe we should use something like GuildSession to easily manage cleanup
+    public void startPlaying(Guild guild) { //Maybe we should use something like GuildSession to easily manage cleanup
         //TODO remove checks outside of mono
         TrackScheduler trackScheduler = getOrThrow(guild);
         if (trackScheduler.getState() != TrackScheduler.State.STOPPED)
-            return Mono.error(new IllegalStateException("Already playing"));
-        return Mono.justOrEmpty(trackScheduler.getGuildMusicBot().getTrackQueue().dequeue())
-                .switchIfEmpty(Mono.error(new IllegalStateException("Queue is empty")))
-                .flatMap(trackQueueElement -> {
-                    //TODO not sure if using setters with object is a good idea, it means this object is mutable, therefore it cannot be safely passed around
-                    trackScheduler.setCurrentTrack(trackQueueElement);
-                    trackScheduler.getGuildMusicBot().getPlayer().playTrack(trackQueueElement.getAudioTrack());
-                    trackScheduler.setState(TrackScheduler.State.PLAYING);
-                    return Mono.empty();
-                });
+            throw new IllegalStateException("Already playing");
+        TrackQueueElement trackQueueElement = trackScheduler.getGuildMusicBot().getTrackQueue().dequeue();
+        if(trackQueueElement == null) throw new IllegalStateException("Queue is empty");
+        //TODO not sure if using setters with object is a good idea, it means this object is mutable, therefore it cannot be safely passed around
+        trackScheduler.setCurrentTrack(trackQueueElement);
+        trackScheduler.getGuildMusicBot().getPlayer().playTrack(trackQueueElement.getAudioTrack());
+        trackScheduler.setState(TrackScheduler.State.PLAYING);
     }
 
+    //TODO it doesn't really need to be mono
     public Mono<Void> stopPlaying(Guild guild) {
         TrackScheduler trackScheduler = getOrThrow(guild);
         if (trackScheduler.getState() == TrackScheduler.State.STOPPED)
