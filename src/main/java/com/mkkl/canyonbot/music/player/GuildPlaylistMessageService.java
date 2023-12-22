@@ -17,18 +17,19 @@ import java.util.concurrent.ConcurrentHashMap;
 public class GuildPlaylistMessageService {
 
     //TODO use redis
+    //TODO set max per guild
+    //TODO automatic cleanup
     private final Map<Guild, Map<Message, AudioPlaylist>> guildMap = new ConcurrentHashMap<>();
 
     @EventListener
     private void createContainer(GuildPlayerCreationEvent event) {
         guildMap.put(event.getGuildMusicBot().getGuild(), new ConcurrentHashMap<>());
         log.info("Created playlist container for " + event.getGuildMusicBot().getGuild().getName());
-        //TODO add cleanup
     }
 
     public void add(Guild guild, Message message, AudioPlaylist audioPlaylist) {
         if(!guildMap.containsKey(guild))
-            throw new RuntimeException("Container for guild: " + guild + " not initialized");
+            throw new RuntimeException("Container for guild: " + guild.getName() + " not initialized");
         guildMap.get(guild).put(message, audioPlaylist);
     }
 

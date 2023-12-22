@@ -20,6 +20,7 @@ public class DefaultErrorHandler implements CommandErrorHandler {
                             .getSpec())
                     .build()).then();
         //Handler of last resort
-        return event.editReply("Error:" + throwable.getMessage()).then(); //TODO log error, and send short message to user
+        throwable.printStackTrace();
+        return event.reply("Error:" + throwable.getMessage()).then(); //TODO log error, and send short message to user
     }
 }

@@ -133,7 +133,10 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                 .map(ApplicationCommandInteractionOptionValue::asChannel)
                 .orElse(Mono.empty());
 
+
+
         return event.deferReply()
+                .then(event.getInteraction().getGuild().doOnNext(guildMusicBotService::createGuildMusicBot))
                 .then(handleQuery(new CommandContext(event, query, sourceId, channel)))
                 .then();
     }
@@ -170,25 +173,29 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
         //TODO not all tracks from playlist are loaded
         //TODO no title for playlist
         //TODO handle null on selected track
-        //TODO this way of building message is too complicated and not clear, it should be refactored
         assert searchResult.getPlaylists() != null;
+        AudioPlaylist audioPlaylist = searchResult.getPlaylists().getFirst();
+        assert audioPlaylist != null;
         ShortPlaylistMessage shortPlaylistMessage = ShortPlaylistMessage.builder()
-                .setPlaylist(searchResult.getPlaylists().getFirst())
+                .setPlaylist(audioPlaylist)
                 .setSource(searchResult.getSource())
                 .setUser(context.event.getInteraction().getUser())
                 .build();
-        AudioPlaylist audioPlaylist = searchResult.getPlaylists().getFirst();
-        return context.event.createFollowup(InteractionFollowupCreateSpec.builder()
-                .addEmbed(AudioTrackMessage.builder()
-                        .setAudioTrack(audioPlaylist.getSelectedTrack())
-                        .setSource(searchResult.getSource())
-                        .setQuery(context.query.orElseThrow(() -> new IllegalStateException("Query not found"))) //Should never happen
-                        .setUser(context.event.getInteraction().getUser())
-                        .build()
-                        .getSpec())
-                .addEmbed(shortPlaylistMessage.getSpec())
-                .addComponent(shortPlaylistMessage.getActionRow())
-                .build())
+
+        InteractionFollowupCreateSpec.Builder builder = InteractionFollowupCreateSpec.builder();
+        AudioTrack selectedTrack = audioPlaylist.getSelectedTrack();
+        if(selectedTrack != null)
+            builder.addEmbed(AudioTrackMessage.builder()
+                .setAudioTrack(selectedTrack)
+                .setSource(searchResult.getSource())
+                .setQuery(context.query.orElseThrow(() -> new IllegalStateException("Query not found"))) //Should never happen
+                .setUser(context.event.getInteraction().getUser())
+                .build()
+                .getSpec());
+
+        builder.addEmbed(shortPlaylistMessage.getSpec());
+            //.addComponent(shortPlaylistMessage.getActionRow());
+        return context.event.createFollowup(builder.build())
                 .zipWhen(message -> context.event.getInteraction().getGuild(), Tuples::of)
                 .flatMap(tuple -> {
                     Message message = tuple.getT1();
