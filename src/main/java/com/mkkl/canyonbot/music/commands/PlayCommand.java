@@ -6,11 +6,11 @@ import com.mkkl.canyonbot.commands.DefaultErrorHandler;
 import com.mkkl.canyonbot.commands.RegisterCommand;
 import com.mkkl.canyonbot.commands.exceptions.ReplyMessageException;
 import com.mkkl.canyonbot.discord.GuildVoiceConnectionService;
-import com.mkkl.canyonbot.music.messages.AudioTrackMessage;
-import com.mkkl.canyonbot.music.messages.ShortPlaylistMessage;
+import com.mkkl.canyonbot.music.messages.generators.AudioTrackMessageGenerator;
+import com.mkkl.canyonbot.music.messages.generators.ResponseMessageDataGenerator;
+import com.mkkl.canyonbot.music.messages.generators.ShortPlaylistMessage;
 import com.mkkl.canyonbot.music.player.*;
 import com.mkkl.canyonbot.music.player.queue.TrackQueueElement;
-import com.mkkl.canyonbot.music.player.queue.TrackSchedulerData;
 import com.mkkl.canyonbot.music.search.SearchService;
 import com.mkkl.canyonbot.music.search.SearchResult;
 import com.mkkl.canyonbot.music.search.SourceRegistry;
@@ -176,25 +176,12 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
         assert searchResult.getPlaylists() != null;
         AudioPlaylist audioPlaylist = searchResult.getPlaylists().getFirst();
         assert audioPlaylist != null;
-        ShortPlaylistMessage shortPlaylistMessage = ShortPlaylistMessage.builder()
-                .setPlaylist(audioPlaylist)
-                .setSource(searchResult.getSource())
-                .setUser(context.event.getInteraction().getUser())
-                .build();
+        ResponseMessageDataGenerator shortPlaylistMessage = ShortPlaylistMessage.builder()
+                .playlist(audioPlaylist)
+                .source(searchResult.getSource())
+                .user(context.event.getInteraction().getUser())
+                .build().getMessage();
 
-        InteractionFollowupCreateSpec.Builder builder = InteractionFollowupCreateSpec.builder();
-        AudioTrack selectedTrack = audioPlaylist.getSelectedTrack();
-        if(selectedTrack != null)
-            builder.addEmbed(AudioTrackMessage.builder()
-                .setAudioTrack(selectedTrack)
-                .setSource(searchResult.getSource())
-                .setQuery(context.query.orElseThrow(() -> new IllegalStateException("Query not found"))) //Should never happen
-                .setUser(context.event.getInteraction().getUser())
-                .build()
-                .getSpec());
-
-        builder.addEmbed(shortPlaylistMessage.getSpec());
-            //.addComponent(shortPlaylistMessage.getActionRow());
         return context.event.createFollowup(builder.build())
                 .zipWhen(message -> context.event.getInteraction().getGuild(), Tuples::of)
                 .flatMap(tuple -> {
@@ -211,7 +198,7 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
         //First adds track to queue and then sends confirmation message
         return playTrack(context, track)
                 .then(context.event.createFollowup(InteractionFollowupCreateSpec.builder()
-                        .addEmbed(AudioTrackMessage.builder()
+                        .addEmbed(AudioTrackMessageGenerator.builder()
                                 .setAudioTrack(track)
                                 .setSource(searchResult.getSource())
                                 .setQuery(context.query.orElseThrow(() -> new IllegalStateException("Query not found")))

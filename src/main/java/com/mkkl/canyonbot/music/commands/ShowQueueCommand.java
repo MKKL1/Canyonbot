@@ -3,8 +3,7 @@ package com.mkkl.canyonbot.music.commands;
 import com.mkkl.canyonbot.commands.BotCommand;
 import com.mkkl.canyonbot.commands.DefaultErrorHandler;
 import com.mkkl.canyonbot.commands.RegisterCommand;
-import com.mkkl.canyonbot.music.messages.QueueMessage;
-import com.mkkl.canyonbot.music.player.GuildMusicBot;
+import com.mkkl.canyonbot.music.messages.generators.QueueMessageGenerator;
 import com.mkkl.canyonbot.music.player.GuildMusicBotService;
 import com.mkkl.canyonbot.music.player.queue.TrackQueueElement;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
@@ -31,7 +30,7 @@ public class ShowQueueCommand extends BotCommand {
                 .getGuild()
                 .flatMap(guild -> Mono.justOrEmpty(guildMusicBotService.getGuildMusicBot(guild)))
                 .flatMap(guildMusicBot -> {
-                    QueueMessage<TrackQueueElement> queueMessage = QueueMessage.builder()
+                    QueueMessageGenerator<TrackQueueElement> queueMessage = QueueMessageGenerator.builder()
                             .setQueue(guildMusicBot.getTrackQueue())
                             .setPage(0)
                             .setElementsPerPage(20)

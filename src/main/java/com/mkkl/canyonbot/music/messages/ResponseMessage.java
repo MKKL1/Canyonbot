@@ -1,7 +1,8 @@
 package com.mkkl.canyonbot.music.messages;
 
-import discord4j.core.spec.EmbedCreateSpec;
+import com.mkkl.canyonbot.music.messages.generators.ResponseMessageData;
+import com.mkkl.canyonbot.music.messages.generators.ResponseMessageDataGenerator;
 
 public interface ResponseMessage {
-    EmbedCreateSpec getSpec();
+    ResponseMessageData getMessage();
 }
