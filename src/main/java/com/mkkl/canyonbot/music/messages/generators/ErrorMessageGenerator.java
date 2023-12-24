@@ -1,6 +1,5 @@
 package com.mkkl.canyonbot.music.messages.generators;
 
-import com.mkkl.canyonbot.commands.exceptions.ResponseMessageText;
 import com.mkkl.canyonbot.music.messages.ResponseMessage;
 import com.mkkl.canyonbot.music.messages.SearchResponseConst;
 import discord4j.core.object.entity.User;

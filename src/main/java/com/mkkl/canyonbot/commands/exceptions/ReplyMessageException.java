@@ -1,15 +1,26 @@
 package com.mkkl.canyonbot.commands.exceptions;
 
-//TODO this should probably be decorator
-public class ReplyMessageException extends RuntimeException implements ResponseMessageText {
-    private final String text;
-    public ReplyMessageException(String text) {
-        super(text);
-        this.text = text;
+import discord4j.core.object.command.Interaction;
+import lombok.Getter;
+
+/**
+ * Helps with responding to command caller with simple message.
+ * To be used when something out of caller's control went wrong.
+ */
+@Getter
+public class ReplyMessageException extends Throwable {
+    private final String discordMessage;
+    public ReplyMessageException(Throwable cause, String discordMessage) {
+        super(cause);
+        this.discordMessage = discordMessage;
     }
 
-    @Override
-    public String getText() {
-        return text;
+    public ReplyMessageException(String message, String discordMessage) {
+        super("Fatal error: " + message + ". Report this issue");
+        this.discordMessage = discordMessage;
+    }
+
+    public ReplyMessageException(String discordMessage) {
+        this.discordMessage = discordMessage;
     }
 }

@@ -6,6 +6,7 @@ import com.mkkl.canyonbot.commands.DefaultErrorHandler;
 import com.mkkl.canyonbot.commands.RegisterCommand;
 import com.mkkl.canyonbot.commands.exceptions.ReplyMessageException;
 import com.mkkl.canyonbot.discord.GuildVoiceConnectionService;
+import com.mkkl.canyonbot.music.exceptions.*;
 import com.mkkl.canyonbot.music.messages.generators.*;
 import com.mkkl.canyonbot.music.player.*;
 import com.mkkl.canyonbot.music.player.queue.TrackQueueElement;
@@ -148,27 +149,29 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
     private Mono<Message> handleQuery(CommandContext context) {
         //TODO order of error checking is not easily modifiable, fix this
         Mono<SearchResult> searchResultMono;
-        String query = context.query.orElseThrow(() -> new ReplyMessageException("Query not found"));
+        if(context.query.isEmpty())
+            return Mono.error(new QueryNotFoundException(context.event.getInteraction()));
+        String query = context.query.get();
         if (context.sourceId.isEmpty())
             searchResultMono = searchService.search(query);
-        else
-            searchResultMono = searchService.search(query, sourceRegistry.getSource(context.sourceId.get())
-                    .orElseThrow(() -> new ReplyMessageException("Source not found")));
+        else {
+            Optional<SearchSource> searchSource = sourceRegistry.getSource(context.sourceId.get());
+            if(searchSource.isEmpty())
+                return Mono.error(new SourceNotFoundException(context.sourceId.get()));
+            searchResultMono = searchService.search(query, searchSource.get());
+        }
 
         return searchResultMono
                 .publishOn(Schedulers.boundedElastic())
                 .flatMap(searchResult -> {
-                    Mono<Message> message = context.event.editReply("No match found");//TODO this should be handled by NoMatchException
-                    if (searchResult.getPlaylists() != null && !searchResult.getPlaylists()
-                            .isEmpty()) {
+                    Mono<Message> message = Mono.empty();
+                    if (searchResult.getPlaylists() != null && !searchResult.getPlaylists().isEmpty()) {
                         //SearchResult is a playlist
                         message = handlePlaylist(context, searchResult);
-                    } else if (searchResult.getTracks() != null && !searchResult.getTracks()
-                            .isEmpty()) {
+                    } else if (searchResult.getTracks() != null && !searchResult.getTracks().isEmpty()) {
                         //SearchResult is a track
                         message = handleTrack(context, searchResult);
-                    }
-
+                    } else message = Mono.error(new NoMatchException(query));
                     return message;
                 });
     }
@@ -240,13 +243,13 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                     .filter(isConnected -> !isConnected)
                     .flatMap(isConnected -> context.channel)
                     .switchIfEmpty(Mono.justOrEmpty(context.event.getInteraction().getMember())
-                            .switchIfEmpty(Mono.error(new ReplyMessageException("Member not found")))
+                            .switchIfEmpty(Mono.error(new MemberNotFoundException(context.event.getInteraction())))
                             .flatMap(PartialMember::getVoiceState)
                             .flatMap(VoiceState::getChannel))
-                    .switchIfEmpty(Mono.error(new ReplyMessageException("Channel not found")))
+                    .switchIfEmpty(Mono.error(new ChannelNotFoundException(context.event.getInteraction())))
                     .flatMap(channel -> {
                         if (!(channel instanceof AudioChannel))
-                            return Mono.error(new ReplyMessageException(channel.getMention() + " is not Audio Channel"));
+                            return Mono.error(new InvalidAudioChannelException(context.event.getInteraction()));
                         return Mono.just((AudioChannel) channel);
                     })
                     .flatMap(audioChannel ->
