@@ -16,13 +16,13 @@ public class DefaultErrorHandler implements CommandErrorHandler {
         //TODO there needs to be a distinction between user and application caused errors
         if (throwable instanceof ReplyMessageException)
             return event.createFollowup(InteractionFollowupCreateSpec.builder()
-                            .addEmbed(ErrorMessage.builder()
+                            .addAllEmbeds(ErrorMessage.builder()
                                     .user(event.getInteraction()
                                             .getUser())
                                     .message(throwable.getMessage())
                                     .build()
                                     .getMessage()
-                                    .first())
+                                    .embeds())
                             .build())
                     .then();
         //Handler of last resort

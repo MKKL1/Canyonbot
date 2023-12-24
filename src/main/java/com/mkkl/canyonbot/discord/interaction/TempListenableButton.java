@@ -6,6 +6,7 @@ import discord4j.core.object.component.Button;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
+import org.immutables.value.Value;
 import org.reactivestreams.Publisher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Configurable;
@@ -16,57 +17,68 @@ import reactor.core.publisher.Mono;
 import java.time.Duration;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
-//TODO this way of handling actions is too complicated, use spring
-@Configurable
-@Getter
+//TODO in this case use Immutables.Value to be consistent with messages
 public class TempListenableButton {
+    @Getter
     private final Button button;
+    @Getter
     private final String id;
-    @Setter
     private Function<ButtonInteractionEvent, ? extends Publisher<?>> buttonClickAction = ignore -> Mono.empty();
-    @Setter
-    private Function<TimeoutException, ? extends Publisher<?>> timeoutAction = ignore -> Mono.empty();
-    private TempListenableButton(Button button) {
+    private Supplier<? extends Mono<Void>> timeoutAction = Mono::empty;
+
+    public TempListenableButton(Button button,
+                                String id,
+                                Function<ButtonInteractionEvent, ? extends Publisher<?>> buttonClickAction,
+                                Supplier<? extends Mono<Void>> timeoutAction) {
         this.button = button;
-        if (button.getCustomId().isEmpty())
-            throw new IllegalArgumentException("Button must have custom id");
-        this.id = button.getCustomId().get();
+        this.id = id;
+        this.buttonClickAction = buttonClickAction;
+        this.timeoutAction = timeoutAction;
     }
 
-    public static TempListenableButton of(Button button) {
-        return new TempListenableButton(button);
+    public Mono<Void> register(DiscordClient client, Duration duration) {
+        return client.withGateway(gateway -> gateway.on(ButtonInteractionEvent.class)
+                        .filter(event -> event.getCustomId().equals(id))
+                        .flatMap(event -> buttonClickAction.apply(event))
+                )
+                .timeout(duration)
+                .onErrorResume(TimeoutException.class, ignore -> timeoutAction.get());
     }
 
-    public static TempListenableButtonBuilder builder(Button button) {
-        return new TempListenableButtonBuilder(button);
+    public static Builder builder(Button button) {
+        return new Builder(button);
     }
 
-    //TODO when button is disabled there is no reason to receive events from it
-
-    public static class TempListenableButtonBuilder {
-        private Function<ButtonInteractionEvent, ? extends Publisher<?>> buttonClickAction = ignore -> Mono.empty();
-        private Function<TimeoutException, ? extends Publisher<?>> timeoutAction = ignore -> Mono.empty();
+    public static class Builder {
         private final Button button;
+        private final String id;
 
-        public TempListenableButtonBuilder(Button button) {
+        public Builder(Button button) {
             this.button = button;
+            this.id = button.getCustomId()
+                    .orElseThrow(() -> new IllegalArgumentException("Button has to have custom id"));
         }
 
-        public TempListenableButtonBuilder setButtonClickAction(Function<ButtonInteractionEvent, ? extends Publisher<?>> buttonClickAction) {
-            this.buttonClickAction = buttonClickAction;
+        private Function<ButtonInteractionEvent, ? extends Publisher<?>> buttonClickAction = ignore -> Mono.empty();
+        private Supplier<? extends Mono<Void>> timeoutAction = Mono::empty;
+
+        public Builder clickAction(Function<ButtonInteractionEvent, ? extends Publisher<?>> action) {
+            buttonClickAction = action;
             return this;
         }
-        public TempListenableButtonBuilder setTimeoutAction(Function<TimeoutException, ? extends Publisher<?>> timeoutAction) {
-            this.timeoutAction = timeoutAction;
+
+        public Builder timeoutAction(Supplier<? extends Mono<Void>> action) {
+            timeoutAction = action;
             return this;
         }
+
         public TempListenableButton build() {
-            TempListenableButton tempListenableButton = TempListenableButton.of(button);
-            tempListenableButton.setButtonClickAction(buttonClickAction);
-            tempListenableButton.setTimeoutAction(timeoutAction);
-            return tempListenableButton;
+            return new TempListenableButton(button, id, buttonClickAction, timeoutAction);
         }
+
     }
 }

@@ -6,9 +6,7 @@ import com.mkkl.canyonbot.commands.DefaultErrorHandler;
 import com.mkkl.canyonbot.commands.RegisterCommand;
 import com.mkkl.canyonbot.commands.exceptions.ReplyMessageException;
 import com.mkkl.canyonbot.discord.GuildVoiceConnectionService;
-import com.mkkl.canyonbot.music.messages.generators.AudioTrackMessageGenerator;
-import com.mkkl.canyonbot.music.messages.generators.ResponseMessageDataGenerator;
-import com.mkkl.canyonbot.music.messages.generators.ShortPlaylistMessage;
+import com.mkkl.canyonbot.music.messages.generators.*;
 import com.mkkl.canyonbot.music.player.*;
 import com.mkkl.canyonbot.music.player.queue.TrackQueueElement;
 import com.mkkl.canyonbot.music.search.SearchService;
@@ -17,6 +15,7 @@ import com.mkkl.canyonbot.music.search.SourceRegistry;
 import com.mkkl.canyonbot.music.search.internal.sources.SearchSource;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
+import discord4j.core.DiscordClient;
 import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.VoiceState;
@@ -53,6 +52,7 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
     private final GuildVoiceConnectionService voiceConnectionService;
     private final GuildMusicBotService guildMusicBotService;
     private final GuildPlaylistMessageService guildPlaylistMessageService;
+    private final DiscordClient client;
 
     //private CommandOptionCompletionManager completionManager;
     public PlayCommand(SearchService searchService,
@@ -61,7 +61,7 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                        GuildMusicBotService guildMusicBotService,
                        GuildVoiceConnectionService voiceConnectionService,
                        DefaultErrorHandler errorHandler,
-                       GuildPlaylistMessageService guildPlaylistMessageService) {
+                       GuildPlaylistMessageService guildPlaylistMessageService, DiscordClient client) {
         super(ApplicationCommandRequest.builder()
                 .name("play")
                 .description("Play a song")
@@ -109,6 +109,7 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
         this.guildMusicBotService = guildMusicBotService;
         this.voiceConnectionService = voiceConnectionService;
         this.guildPlaylistMessageService = guildPlaylistMessageService;
+        this.client = client;
     }
 
     @Override
@@ -176,20 +177,30 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
         assert searchResult.getPlaylists() != null;
         AudioPlaylist audioPlaylist = searchResult.getPlaylists().getFirst();
         assert audioPlaylist != null;
-        ResponseMessageDataGenerator shortPlaylistMessage = ShortPlaylistMessage.builder()
+        ResponseMessageDataMono shortPlaylistMessage = ShortPlaylistMessage.builder()
                 .playlist(audioPlaylist)
                 .source(searchResult.getSource())
                 .user(context.event.getInteraction().getUser())
-                .build().getMessage();
+                .client(client)
+                .build()
+                .getMessage();
 
-        return context.event.createFollowup(builder.build())
+        Mono<Void> playMono = Mono.empty();
+        if(audioPlaylist.getSelectedTrack() != null)
+            playMono = playTrack(context, audioPlaylist.getSelectedTrack());
+
+        return playMono
+                .then(context.event.createFollowup(InteractionFollowupCreateSpec.builder()
+                        .addAllEmbeds(shortPlaylistMessage.embeds())
+                        .addAllComponents(shortPlaylistMessage.components())
+                        .build())
                 .zipWhen(message -> context.event.getInteraction().getGuild(), Tuples::of)
                 .flatMap(tuple -> {
                     Message message = tuple.getT1();
                     Guild guild = tuple.getT2();
                     guildPlaylistMessageService.add(guild, message, audioPlaylist);
-                    return Mono.just(message);
-                });
+                    return shortPlaylistMessage.publisher().then(Mono.just(message));
+                }));
     }
 
     private Mono<Message> handleTrack(CommandContext context, SearchResult searchResult) {
@@ -198,14 +209,13 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
         //First adds track to queue and then sends confirmation message
         return playTrack(context, track)
                 .then(context.event.createFollowup(InteractionFollowupCreateSpec.builder()
-                        .addEmbed(AudioTrackMessageGenerator.builder()
-                                .setAudioTrack(track)
-                                .setSource(searchResult.getSource())
-                                .setQuery(context.query.orElseThrow(() -> new IllegalStateException("Query not found")))
-                                .setUser(context.event.getInteraction()
-                                        .getUser())
+                        .addAllEmbeds(AudioTrackMessage.builder()
+                                .audioTrack(track)
+                                .source(searchResult.getSource())
+                                .query(context.query.orElseThrow(() -> new IllegalStateException("Query not found")))
+                                .user(context.event.getInteraction().getUser())
                                 .build()
-                                .getSpec())
+                                .getMessage().embeds())
                         .build()));
     }
 
