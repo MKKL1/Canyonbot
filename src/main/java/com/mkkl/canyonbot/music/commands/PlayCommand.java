@@ -52,6 +52,7 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
     private final GuildVoiceConnectionService voiceConnectionService;
     private final GuildMusicBotService guildMusicBotService;
     private final GuildPlaylistMessageService guildPlaylistMessageService;
+    private final GuildTrackQueueService guildTrackQueueService;
     private final DiscordClient client;
 
     //private CommandOptionCompletionManager completionManager;
@@ -61,7 +62,7 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                        GuildMusicBotService guildMusicBotService,
                        GuildVoiceConnectionService voiceConnectionService,
                        DefaultErrorHandler errorHandler,
-                       GuildPlaylistMessageService guildPlaylistMessageService, DiscordClient client) {
+                       GuildPlaylistMessageService guildPlaylistMessageService, GuildTrackQueueService guildTrackQueueService, DiscordClient client) {
         super(ApplicationCommandRequest.builder()
                 .name("play")
                 .description("Play a song")
@@ -109,6 +110,7 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
         this.guildMusicBotService = guildMusicBotService;
         this.voiceConnectionService = voiceConnectionService;
         this.guildPlaylistMessageService = guildPlaylistMessageService;
+        this.guildTrackQueueService = guildTrackQueueService;
         this.client = client;
     }
 
@@ -182,6 +184,8 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                 .source(searchResult.getSource())
                 .user(context.event.getInteraction().getUser())
                 .client(client)
+                .guild(context.event.getInteraction().getGuild().block()) //TODO only for testing REMOVE
+                .trackQueueService(guildTrackQueueService)
                 .build()
                 .getMessage();
 
@@ -229,7 +233,7 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                 GuildMusicBot guildMusicBot = tuple.getT2();
 
                 Mono<Void> enqueueMono = Mono.fromRunnable(() -> guildMusicBot.getTrackQueue()
-                        .enqueue(new TrackQueueElement(track, context.event.getInteraction().getUser())));
+                        .add(new TrackQueueElement(track, context.event.getInteraction().getUser())));
 
                 Mono<VoiceConnection> joinMono = voiceConnectionService.isConnected(guild)
                     .filter(isConnected -> !isConnected)

@@ -14,6 +14,6 @@ import lombok.Getter;
 public class GuildMusicBot {
     private final MusicPlayerBase player;
     private final MusicBotEventDispatcher eventDispatcher;
-    private final TrackQueue<TrackQueueElement> trackQueue;
+    private final TrackQueue trackQueue;//TODO remove it from here
     private final Guild guild;
 }

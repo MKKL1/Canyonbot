@@ -8,14 +8,9 @@ import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 //Just a simple LinkedBlockingQueue adapter
-public class SimpleTrackQueue implements TrackQueue<TrackQueueElement> {
+public class SimpleTrackQueue implements TrackQueue {
 
     private final Queue<TrackQueueElement> queue = new LinkedBlockingQueue<>();
-
-    @Override
-    public boolean enqueue(TrackQueueElement track) {
-        return queue.add(track);
-    }
 
     @Nullable
     @Override
@@ -51,6 +46,11 @@ public class SimpleTrackQueue implements TrackQueue<TrackQueueElement> {
     @Override
     public <T> T[] toArray(T[] a) {
         return queue.toArray(a);
+    }
+
+    @Override
+    public boolean add(TrackQueueElement trackQueueElement) {
+        return queue.add(trackQueueElement);
     }
 
     @Override

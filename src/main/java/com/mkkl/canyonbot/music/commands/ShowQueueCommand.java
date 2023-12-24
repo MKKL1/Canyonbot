@@ -6,6 +6,7 @@ import com.mkkl.canyonbot.commands.RegisterCommand;
 import com.mkkl.canyonbot.music.messages.generators.QueueMessage;
 import com.mkkl.canyonbot.music.messages.generators.QueueMessageGenerator;
 import com.mkkl.canyonbot.music.player.GuildMusicBotService;
+import com.mkkl.canyonbot.music.player.GuildTrackQueueService;
 import com.mkkl.canyonbot.music.player.queue.TrackQueueElement;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
@@ -15,25 +16,24 @@ import reactor.core.publisher.Mono;
 
 @RegisterCommand
 public class ShowQueueCommand extends BotCommand {
-    private final GuildMusicBotService guildMusicBotService;
+    private final GuildTrackQueueService guildTrackQueueService;
 
-    protected ShowQueueCommand(GuildMusicBotService guildMusicBotService,
+    protected ShowQueueCommand(GuildTrackQueueService guildTrackQueueService,
                                DefaultErrorHandler errorHandler) {
         super(ApplicationCommandRequest.builder()
                 .name("queue")
                 .description("Shows the current queue")
                 .build(), errorHandler);
-        this.guildMusicBotService = guildMusicBotService;
+        this.guildTrackQueueService = guildTrackQueueService;
     }
 
     @Override
     public Mono<Void> execute(ChatInputInteractionEvent event) {
         return event.getInteraction()
                 .getGuild()
-                .flatMap(guild -> Mono.justOrEmpty(guildMusicBotService.getGuildMusicBot(guild)))
-                .flatMap(guildMusicBot -> {
-                    QueueMessage<TrackQueueElement> queueMessage = QueueMessage.builder()
-                            .queue(guildMusicBot.getTrackQueue())
+                .flatMap(guild -> {
+                    QueueMessage queueMessage = QueueMessage.builder()
+                            .queueIterator(guildTrackQueueService.iterator(guild))
                             .page(0)
                             .elementsPerPage(20)
                             .caller(event.getInteraction().getUser())

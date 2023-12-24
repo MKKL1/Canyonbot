@@ -37,7 +37,7 @@ public class GuildTrackSchedulerService {
                         return Mono.fromRunnable(() -> {
                             TrackQueueElement track = guildMusicBot.getTrackQueue().dequeue();
                             trackScheduler.setCurrentTrack(track);
-                            if (track.isEmpty()) {
+                            if (track != null) {
                                 guildMusicBot.getPlayer().playTrack(track.getAudioTrack());
                             } else {
                                 guildMusicBot.getEventDispatcher().publish(new QueueEmptyEvent(guildMusicBot, guildMusicBot.getTrackQueue()));
@@ -46,7 +46,7 @@ public class GuildTrackSchedulerService {
                         });
                     }
                     trackScheduler.setState(TrackScheduler.State.STOPPED);
-                    trackScheduler.setCurrentTrack(TrackQueueElement.empty());
+                    trackScheduler.setCurrentTrack(null);
                     //Cleanup
                     //return guildMusicBotManager.leave();//TODO event here as well
                     return Mono.empty();//TODO !!!leave
@@ -77,7 +77,7 @@ public class GuildTrackSchedulerService {
             trackScheduler.getGuildMusicBot().getTrackQueue().clear();
             trackScheduler.getGuildMusicBot().getPlayer().stopTrack();
             //TODO The longer I look at this, the more I think that TrackQueue should be non-generic
-            trackScheduler.setCurrentTrack(TrackQueueElement.empty());
+            trackScheduler.setCurrentTrack(null);
             trackScheduler.setState(TrackScheduler.State.STOPPED);
             //TODO stop event
         });
@@ -93,7 +93,7 @@ public class GuildTrackSchedulerService {
 
     public Mono<TrackQueueElement> skip(Guild guild) {
         TrackScheduler trackScheduler = getOrThrow(guild);
-        if (trackScheduler.getState() == TrackScheduler.State.STOPPED || trackScheduler.getCurrentTrack().isEmpty())
+        if (trackScheduler.getState() == TrackScheduler.State.STOPPED || trackScheduler.getCurrentTrack() == null)
             return Mono.error(new IllegalStateException("Nothing to skip"));
         //TODO skip event
         return Mono.just(Objects.requireNonNull(trackScheduler.getCurrentTrack()))

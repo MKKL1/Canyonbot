@@ -11,8 +11,8 @@ import java.time.Instant;
 import java.util.*;
 
 @Value.Immutable
-public interface QueueMessageGenerator<T extends TrackQueueElement> extends ResponseMessage {
-    TrackQueue<T> queue();
+public interface QueueMessageGenerator extends ResponseMessage {
+    Iterator<TrackQueueElement> queueIterator();
     @Value.Default
     default int page() {
         return 0;
@@ -28,20 +28,21 @@ public interface QueueMessageGenerator<T extends TrackQueueElement> extends Resp
     default ResponseMessageData getMessage() {
         EmbedCreateSpec.Builder embedBuilder = EmbedCreateSpec.builder();
         embedBuilder.title("Queue");
+
+        int i = 1;
         StringBuilder stringBuilder = new StringBuilder();
-        Iterator<T> iterator = queue().iterator();
-        for (int i = 0; i < page() * elementsPerPage(); i++) {
-            if (!iterator.hasNext()) break;
-            iterator.next();
-        }
-        for (int i = page() * elementsPerPage(); i < (page() + 1) * elementsPerPage(); i++) {
-            if (i >= queue().size()) break;
+        for (Iterator<TrackQueueElement> it = queueIterator(); it.hasNext(); ) {
+            TrackQueueElement trackQueueElement = it.next();
+            if(trackQueueElement == null)
+                break;
+
             stringBuilder.append(i + 1)
                     .append(". ")
-                    .append(iterator.next()
+                    .append(trackQueueElement
                             .getAudioTrack()
                             .getInfo().title)
                     .append("\n");
+
         }
         embedBuilder.description(stringBuilder.toString());
         embedBuilder.timestamp(Instant.now());

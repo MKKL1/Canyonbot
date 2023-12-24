@@ -8,8 +8,8 @@ import lombok.Getter;
 
 @Getter
 public class QueueEmptyEvent extends MusicPlayerEvent {
-    private final TrackQueue<TrackQueueElement> trackQueue;
-    public QueueEmptyEvent(GuildMusicBot guildMusicBotManager, TrackQueue<TrackQueueElement> trackQueue) {
+    private final TrackQueue trackQueue;
+    public QueueEmptyEvent(GuildMusicBot guildMusicBotManager, TrackQueue trackQueue) {
         super(guildMusicBotManager);
         this.trackQueue = trackQueue;
     }
