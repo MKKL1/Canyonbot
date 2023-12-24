@@ -14,6 +14,9 @@ import discord4j.core.spec.InteractionFollowupCreateSpec;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import reactor.core.publisher.Mono;
 
+import java.util.Objects;
+import java.util.Optional;
+
 @RegisterCommand
 public class ShowQueueCommand extends BotCommand {
     private final GuildTrackQueueService guildTrackQueueService;
@@ -32,16 +35,20 @@ public class ShowQueueCommand extends BotCommand {
         return event.getInteraction()
                 .getGuild()
                 .flatMap(guild -> {
-                    QueueMessage queueMessage = QueueMessage.builder()
-                            .queueIterator(guildTrackQueueService.iterator(guild))
+                    QueueMessage.Builder builder = QueueMessage.builder();
+
+                    if (guildTrackQueueService.isPresent(guild))
+                        builder.queueIterator(Objects.requireNonNull(guildTrackQueueService.iterator(guild)));
+
+                    QueueMessage queueMessage = builder
                             .page(0)
                             .elementsPerPage(20)
                             .caller(event.getInteraction().getUser())
                             .build();
-                    return event.createFollowup(InteractionFollowupCreateSpec.builder()
-                        .addAllEmbeds(queueMessage.getMessage().embeds())
-                        .addAllComponents(queueMessage.getMessage().components())
-                        .build());
+                    return event.reply(InteractionApplicationCommandCallbackSpec.builder()
+                            .addAllEmbeds(queueMessage.getMessage().embeds())
+                            .addAllComponents(queueMessage.getMessage().components())
+                            .build());
 
                 })
                 .then();

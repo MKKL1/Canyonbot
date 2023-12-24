@@ -12,7 +12,7 @@ import java.util.*;
 
 @Value.Immutable
 public interface QueueMessageGenerator extends ResponseMessage {
-    Iterator<TrackQueueElement> queueIterator();
+    Optional<Iterator<TrackQueueElement>> queueIterator();
     @Value.Default
     default int page() {
         return 0;
@@ -28,25 +28,27 @@ public interface QueueMessageGenerator extends ResponseMessage {
     default ResponseMessageData getMessage() {
         EmbedCreateSpec.Builder embedBuilder = EmbedCreateSpec.builder();
         embedBuilder.title("Queue");
+        embedBuilder.timestamp(Instant.now());
+        embedBuilder.footer(caller().getUsername(), caller().getAvatarUrl());
+        if (queueIterator().isEmpty()) {
+            embedBuilder.description("Queue is empty");
+            return ResponseMessageData.builder().addEmbed(embedBuilder.build()).build();
+        }
 
         int i = 1;
         StringBuilder stringBuilder = new StringBuilder();
-        for (Iterator<TrackQueueElement> it = queueIterator(); it.hasNext(); ) {
+        for (Iterator<TrackQueueElement> it = queueIterator().get(); it.hasNext(); ) {
             TrackQueueElement trackQueueElement = it.next();
             if(trackQueueElement == null)
                 break;
 
             stringBuilder.append(i + 1)
                     .append(". ")
-                    .append(trackQueueElement
-                            .getAudioTrack()
-                            .getInfo().title)
+                    .append(trackQueueElement.getAudioTrack().getInfo().title)
                     .append("\n");
 
         }
         embedBuilder.description(stringBuilder.toString());
-        embedBuilder.timestamp(Instant.now());
-        embedBuilder.footer(caller().getUsername(), caller().getAvatarUrl());
         return ResponseMessageData.builder().addEmbed(embedBuilder.build()).build();
     }
 }

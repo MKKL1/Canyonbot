@@ -46,6 +46,10 @@ public class GuildTrackQueueService {
         return getTrackQueue(guild).iterator();
     }
 
+    public boolean isPresent(Guild guild) {
+        return guildTrackQueueMap.containsKey(guild);
+    }
+
     private @NonNull TrackQueue getTrackQueue(Guild guild) {
         TrackQueue trackQueue = guildTrackQueueMap.get(guild);
         if(trackQueue == null) throw new IllegalStateException("Track queue for guild " + guild.getName() + " has not been initialized");

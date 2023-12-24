@@ -44,6 +44,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
+//TODO refactoring needed, this class handles too many operations
 @RegisterCommand
 public class PlayCommand extends BotCommand implements AutoCompleteCommand {
     private final SearchService searchService;
