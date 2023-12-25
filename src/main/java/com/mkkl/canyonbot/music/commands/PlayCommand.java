@@ -239,21 +239,23 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                 Mono<Void> enqueueMono = Mono.fromRunnable(() -> guildMusicBot.getTrackQueue()
                         .add(new TrackQueueElement(track, context.event.getInteraction().getUser())));
 
-                Mono<VoiceConnection> joinMono = voiceConnectionService.isConnected(guild)
+                Mono<Void> joinMono = voiceConnectionService.isConnected(guild)
                     .filter(isConnected -> !isConnected)
-                    .flatMap(isConnected -> context.channel)
-                    .switchIfEmpty(Mono.justOrEmpty(context.event.getInteraction().getMember())
-                            .switchIfEmpty(Mono.error(new MemberNotFoundException(context.event.getInteraction())))
-                            .flatMap(PartialMember::getVoiceState)
-                            .flatMap(VoiceState::getChannel))
-                    .switchIfEmpty(Mono.error(new ChannelNotFoundException(context.event.getInteraction())))
-                    .flatMap(channel -> {
-                        if (!(channel instanceof AudioChannel))
-                            return Mono.error(new InvalidAudioChannelException(context.event.getInteraction()));
-                        return Mono.just((AudioChannel) channel);
-                    })
-                    .flatMap(audioChannel ->
-                        voiceConnectionService.join(guild, guildMusicBot.getPlayer().getAudioProvider(), audioChannel));
+                    .flatMap(ignore -> context.channel
+                            //Check for audio channel caller is connected to
+                            .switchIfEmpty(Mono.justOrEmpty(context.event.getInteraction().getMember())
+                                .switchIfEmpty(Mono.error(new MemberNotFoundException(context.event.getInteraction())))
+                                .flatMap(PartialMember::getVoiceState)
+                                .flatMap(VoiceState::getChannel)
+                                //Check if audio channel was found, else throw exception
+                                .switchIfEmpty(Mono.error(new ChannelNotFoundException(context.event.getInteraction()))))
+                            .flatMap(channel -> {
+                                if (!(channel instanceof AudioChannel))
+                                    return Mono.error(new InvalidAudioChannelException(context.event.getInteraction()));
+                                return Mono.just((AudioChannel) channel);
+                            })
+                            .flatMap(audioChannel -> voiceConnectionService.join(guild, guildMusicBot.getPlayer().getAudioProvider(), audioChannel)))
+                    .then();
 
 
                 Mono<Void> startMono = trackSchedulerService.getState(guild) == TrackScheduler.State.STOPPED
