@@ -2,10 +2,12 @@ package com.mkkl.canyonbot.discord;
 
 import discord4j.core.DiscordClient;
 import discord4j.core.DiscordClientBuilder;
+import discord4j.core.GatewayDiscordClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import reactor.core.publisher.Mono;
 
 import java.util.regex.Pattern;
 
@@ -26,5 +28,10 @@ public class ClientConfiguration {
             throw new RuntimeException("Token is invalid");
         }
         return DiscordClientBuilder.create(token).build();
+    }
+
+    @Bean
+    public Mono<GatewayDiscordClient> gatewayDiscordClient() {
+        return discordClient().login();
     }
 }

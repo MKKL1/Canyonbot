@@ -6,6 +6,7 @@ import com.mkkl.canyonbot.commands.DefaultErrorHandler;
 import com.mkkl.canyonbot.commands.RegisterCommand;
 import com.mkkl.canyonbot.commands.exceptions.ReplyMessageException;
 import com.mkkl.canyonbot.discord.GuildVoiceConnectionService;
+import com.mkkl.canyonbot.music.buttons.PlaylistAddAllButton;
 import com.mkkl.canyonbot.music.exceptions.*;
 import com.mkkl.canyonbot.music.messages.generators.*;
 import com.mkkl.canyonbot.music.player.*;
@@ -17,12 +18,15 @@ import com.mkkl.canyonbot.music.search.internal.sources.SearchSource;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import discord4j.core.DiscordClient;
+import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.VoiceState;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.command.ApplicationCommandOption;
+import discord4j.core.object.component.ActionRow;
+import discord4j.core.object.component.Button;
 import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.PartialMember;
@@ -33,17 +37,18 @@ import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
 import discord4j.discordjson.json.ApplicationCommandOptionData;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import discord4j.discordjson.json.ImmutableApplicationCommandOptionChoiceData;
+import discord4j.discordjson.possible.Possible;
 import discord4j.voice.VoiceConnection;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import org.springframework.beans.factory.annotation.Autowired;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import reactor.util.function.Tuples;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
+import java.time.Duration;
+import java.util.*;
+import java.util.concurrent.TimeoutException;
 
 //TODO refactoring needed, this class handles too many operations
 @RegisterCommand
@@ -56,6 +61,9 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
     private final GuildPlaylistMessageService guildPlaylistMessageService;
     private final GuildTrackQueueService guildTrackQueueService;
     private final DiscordClient client;
+
+    @Autowired
+    private PlaylistAddAllButton playlistAddAllButton;
 
     //private CommandOptionCompletionManager completionManager;
     public PlayCommand(SearchService searchService,
@@ -183,13 +191,11 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
         assert searchResult.getPlaylists() != null;
         AudioPlaylist audioPlaylist = searchResult.getPlaylists().getFirst();
         assert audioPlaylist != null;
-        ResponseMessageDataMono shortPlaylistMessage = ShortPlaylistMessage.builder()
+        ResponseMessageData shortPlaylistMessage = ShortPlaylistMessage.builder()
+                .query(context.query)
                 .playlist(audioPlaylist)
                 .source(searchResult.getSource())
                 .user(context.event.getInteraction().getUser())
-                .client(client)
-                .guild(context.event.getInteraction().getGuild().block()) //TODO only for testing REMOVE
-                .trackQueueService(guildTrackQueueService)
                 .build()
                 .getMessage();
 
@@ -197,18 +203,29 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
         if(audioPlaylist.getSelectedTrack() != null)
             playMono = playTrack(context, audioPlaylist.getSelectedTrack());
 
+//        playlistAddAllButton.onClick()
+//                .filter(event -> event.getMessageId().equals(message.getId()))
+//                ...
+//                .
+
+
         return playMono
                 .then(context.event.createFollowup(InteractionFollowupCreateSpec.builder()
                         .addAllEmbeds(shortPlaylistMessage.embeds())
                         .addAllComponents(shortPlaylistMessage.components())
                         .build())
-                .zipWhen(message -> context.event.getInteraction().getGuild(), Tuples::of)
-                .flatMap(tuple -> {
-                    Message message = tuple.getT1();
-                    Guild guild = tuple.getT2();
-                    guildPlaylistMessageService.add(guild, message, audioPlaylist);
-                    return shortPlaylistMessage.publisher().then(Mono.just(message));
-                }));
+                        .flatMap(message -> playlistAddAllButton.onInteraction()
+                                .filter(event -> event.getMessageId().equals(message.getId()))
+                                .flatMap(event -> event.reply("Playing " + audioPlaylist.getTracks().size() + " tracks"))
+                                .flatMap(event -> Mono.just(message))
+                                .timeout(Duration.ofSeconds(5))
+                                .onErrorResume(TimeoutException.class, ignore -> {
+                                    System.out.println("siema");
+                                    return message.edit().withComponents(ActionRow.of(Button.link("https://github.com/Discord4J/Discord4J/blob/master/core/src/test/java/discord4j/core/ExampleInteractions.java#L218", "URL")));
+                                })
+                                .then(Mono.just(message))
+                        )
+                );
     }
 
     private Mono<Message> handleTrack(CommandContext context, SearchResult searchResult) {

@@ -31,6 +31,8 @@ public class GuildTrackSchedulerService {
             return;
         TrackScheduler trackScheduler = new TrackScheduler(guildMusicBot);
         trackSchedulerDataMap.put(guildMusicBot.getGuild(), trackScheduler);
+
+
         guildMusicBot.getEventDispatcher().on(TrackEndEvent.class)
                 .flatMap(trackEndEvent -> {
                     if (trackEndEvent.getEndReason() != AudioTrackEndReason.CLEANUP) {
