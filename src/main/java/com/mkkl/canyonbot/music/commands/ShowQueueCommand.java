@@ -4,19 +4,14 @@ import com.mkkl.canyonbot.commands.BotCommand;
 import com.mkkl.canyonbot.commands.DefaultErrorHandler;
 import com.mkkl.canyonbot.commands.RegisterCommand;
 import com.mkkl.canyonbot.music.messages.generators.QueueMessage;
-import com.mkkl.canyonbot.music.messages.generators.QueueMessageGenerator;
-import com.mkkl.canyonbot.music.player.GuildMusicBotService;
-import com.mkkl.canyonbot.music.player.GuildTrackQueueService;
-import com.mkkl.canyonbot.music.player.GuildTrackSchedulerService;
-import com.mkkl.canyonbot.music.player.queue.TrackQueueElement;
+import com.mkkl.canyonbot.music.services.GuildTrackQueueService;
+import com.mkkl.canyonbot.music.services.GuildTrackSchedulerService;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
-import discord4j.core.spec.InteractionFollowupCreateSpec;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import reactor.core.publisher.Mono;
 
 import java.util.Objects;
-import java.util.Optional;
 
 @RegisterCommand
 public class ShowQueueCommand extends BotCommand {

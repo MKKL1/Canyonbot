@@ -1,4 +1,4 @@
-package com.mkkl.canyonbot.music.player;
+package com.mkkl.canyonbot.music.services;
 
 import com.mkkl.canyonbot.music.player.event.GuildPlayerCreationEvent;
 import com.mkkl.canyonbot.music.player.queue.SimpleTrackQueue;

@@ -9,6 +9,7 @@ import lombok.Getter;
 
 import java.util.List;
 
+//TODO This may need some refactoring, especially all the nullable values
 @Getter
 public class SearchResult {
 

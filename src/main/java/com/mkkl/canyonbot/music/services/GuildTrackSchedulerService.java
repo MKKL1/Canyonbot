@@ -1,5 +1,7 @@
-package com.mkkl.canyonbot.music.player;
+package com.mkkl.canyonbot.music.services;
 
+import com.mkkl.canyonbot.music.player.GuildMusicBot;
+import com.mkkl.canyonbot.music.player.TrackScheduler;
 import com.mkkl.canyonbot.music.player.event.GuildPlayerCreationEvent;
 import com.mkkl.canyonbot.music.player.event.base.TrackEndEvent;
 import com.mkkl.canyonbot.music.player.event.scheduler.QueueEmptyEvent;
