@@ -7,6 +7,7 @@ import com.mkkl.canyonbot.music.messages.generators.QueueMessage;
 import com.mkkl.canyonbot.music.messages.generators.QueueMessageGenerator;
 import com.mkkl.canyonbot.music.player.GuildMusicBotService;
 import com.mkkl.canyonbot.music.player.GuildTrackQueueService;
+import com.mkkl.canyonbot.music.player.GuildTrackSchedulerService;
 import com.mkkl.canyonbot.music.player.queue.TrackQueueElement;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
@@ -20,14 +21,16 @@ import java.util.Optional;
 @RegisterCommand
 public class ShowQueueCommand extends BotCommand {
     private final GuildTrackQueueService guildTrackQueueService;
+    private final GuildTrackSchedulerService guildTrackSchedulerService;
 
     protected ShowQueueCommand(GuildTrackQueueService guildTrackQueueService,
-                               DefaultErrorHandler errorHandler) {
+                               DefaultErrorHandler errorHandler, GuildTrackSchedulerService guildTrackSchedulerService) {
         super(ApplicationCommandRequest.builder()
                 .name("queue")
                 .description("Shows the current queue")
                 .build(), errorHandler);
         this.guildTrackQueueService = guildTrackQueueService;
+        this.guildTrackSchedulerService = guildTrackSchedulerService;
     }
 
     @Override
@@ -44,7 +47,9 @@ public class ShowQueueCommand extends BotCommand {
                             .page(0)
                             .elementsPerPage(20)
                             .caller(event.getInteraction().getUser())
+                            .currentTrack(guildTrackSchedulerService.getCurrentTrack(guild))
                             .build();
+
                     return event.reply(InteractionApplicationCommandCallbackSpec.builder()
                             .addAllEmbeds(queueMessage.getMessage().embeds())
                             .addAllComponents(queueMessage.getMessage().components())

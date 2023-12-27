@@ -1,11 +1,13 @@
 package com.mkkl.canyonbot.music.player;
 
 import com.mkkl.canyonbot.music.player.event.MusicPlayerEvent;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
+@Slf4j
 public class MusicBotEventDispatcher {
     private static final Scheduler scheduler = Schedulers.boundedElastic();
     private final Sinks.Many<MusicPlayerEvent> events;
@@ -23,6 +25,7 @@ public class MusicBotEventDispatcher {
     }
 
     public void publish(MusicPlayerEvent event) {
+        log.info("Publishing event " + event);
         events.emitNext(event, Sinks.EmitFailureHandler.FAIL_FAST);
     }
 

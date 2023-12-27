@@ -29,6 +29,7 @@ public class GuildTrackSchedulerService {
         GuildMusicBot guildMusicBot = event.getGuildMusicBot();
         if(trackSchedulerDataMap.containsKey(guildMusicBot.getGuild()))
             return;
+
         TrackScheduler trackScheduler = new TrackScheduler(guildMusicBot);
         trackSchedulerDataMap.put(guildMusicBot.getGuild(), trackScheduler);
 
@@ -103,14 +104,14 @@ public class GuildTrackSchedulerService {
     }
 
     //TODO maybe we can create TrackSchedulerRepository to manage TrackScheduler instances
-    //TODO Ask someone if this is good idea
-    public TrackQueueElement getCurrentTrack(Guild guild) {
-        return getOrThrow(guild).getCurrentTrack();
+    public Optional<TrackQueueElement> getCurrentTrack(Guild guild) {
+        return Optional.ofNullable(getOrThrow(guild).getCurrentTrack());
     }
 
     public TrackScheduler.State getState(Guild guild) {
         return getOrThrow(guild).getState();
     }
+
 
     private TrackScheduler getOrThrow(Guild guild) {
         return getTrackSchedulerData(guild).orElseThrow(() -> new IllegalStateException("No scheduler for guild"));

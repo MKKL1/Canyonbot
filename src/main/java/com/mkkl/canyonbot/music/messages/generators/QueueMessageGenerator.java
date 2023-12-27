@@ -13,6 +13,7 @@ import java.util.*;
 @Value.Immutable
 public interface QueueMessageGenerator extends ResponseMessage {
     Optional<Iterator<TrackQueueElement>> queueIterator();
+    Optional<TrackQueueElement> currentTrack();
     @Value.Default
     default int page() {
         return 0;
@@ -38,6 +39,9 @@ public interface QueueMessageGenerator extends ResponseMessage {
         int i = 0;
         int startElement = elementsPerPage()*page();
         StringBuilder stringBuilder = new StringBuilder();
+        if(currentTrack().isPresent())
+            stringBuilder.append("Current: ").append(currentTrack().get().getAudioTrack().getInfo().title).append("\n");
+
         for (Iterator<TrackQueueElement> it = queueIterator().get(); it.hasNext(); ) {
             TrackQueueElement trackQueueElement = it.next();
             if(trackQueueElement == null)
@@ -48,7 +52,8 @@ public interface QueueMessageGenerator extends ResponseMessage {
                     .append(". ")
                     .append(trackQueueElement.getAudioTrack().getInfo().title)
                     .append("\n");
-
+            if(i >= elementsPerPage()) break;
+            i++;
         }
         embedBuilder.description(stringBuilder.toString());
         return ResponseMessageData.builder().addEmbed(embedBuilder.build()).build();

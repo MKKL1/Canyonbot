@@ -11,16 +11,20 @@ import reactor.core.publisher.Mono;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class GuildVoiceConnectionService {
-    private final Map<Guild, VoiceConnection> voiceConnections = new HashMap<>();
+    private final Map<Guild, VoiceConnection> voiceConnections = new ConcurrentHashMap<>();
 
+    //TODO check changing channels
     public Mono<VoiceConnection> join(Guild guild, AudioProvider audioProvider, AudioChannel audioChannel) {
-        return audioChannel.join(AudioChannelJoinSpec.builder().provider(audioProvider).build()).flatMap(voiceConnection -> {
-            voiceConnections.put(guild, voiceConnection);
-            return Mono.just(voiceConnection);
-        });
+        return isConnected(guild)
+                .filter(isConnected -> isConnected)
+                .then(audioChannel.join(AudioChannelJoinSpec.builder()
+                                .provider(audioProvider)
+                                .build())
+                        .doOnNext(voiceConnection -> voiceConnections.put(guild, voiceConnection)));
     }
 
     public Mono<Void> leave(Guild guild) {

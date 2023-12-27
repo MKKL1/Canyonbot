@@ -271,9 +271,10 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                     .then();
 
 
-                Mono<Void> startMono = trackSchedulerService.getState(guild) == TrackScheduler.State.STOPPED
-                    ? Mono.fromRunnable(() -> trackSchedulerService.startPlaying(guild))
-                    : Mono.empty();
+                Mono<Void> startMono = Mono.fromRunnable(() -> {
+                    if(trackSchedulerService.getState(guild) == TrackScheduler.State.STOPPED)
+                        trackSchedulerService.startPlaying(guild);
+                });
                 return enqueueMono
                         .and(joinMono)
                         .then(startMono);
