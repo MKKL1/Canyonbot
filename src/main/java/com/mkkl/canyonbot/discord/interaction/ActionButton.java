@@ -13,8 +13,8 @@ import reactor.core.publisher.Mono;
 
 import java.util.function.Function;
 
-@Getter
 public abstract class ActionButton {
+    @Getter
     private final String id;
     private final Mono<GatewayDiscordClient> gatewayDiscordClientMono;
     protected ActionButton(String id, Mono<GatewayDiscordClient> gatewayDiscordClientMono) {

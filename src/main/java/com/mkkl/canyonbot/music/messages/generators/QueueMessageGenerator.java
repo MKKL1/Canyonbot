@@ -35,12 +35,14 @@ public interface QueueMessageGenerator extends ResponseMessage {
             return ResponseMessageData.builder().addEmbed(embedBuilder.build()).build();
         }
 
-        int i = 1;
+        int i = 0;
+        int startElement = elementsPerPage()*page();
         StringBuilder stringBuilder = new StringBuilder();
         for (Iterator<TrackQueueElement> it = queueIterator().get(); it.hasNext(); ) {
             TrackQueueElement trackQueueElement = it.next();
             if(trackQueueElement == null)
                 break;
+            if(i < startElement) continue;
 
             stringBuilder.append(i + 1)
                     .append(". ")

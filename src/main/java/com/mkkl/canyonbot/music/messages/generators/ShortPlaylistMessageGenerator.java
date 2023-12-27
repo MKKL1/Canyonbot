@@ -1,5 +1,6 @@
 package com.mkkl.canyonbot.music.messages.generators;
 
+import com.mkkl.canyonbot.discord.interaction.ActionButton;
 import com.mkkl.canyonbot.music.messages.ResponseFormatUtils;
 import com.mkkl.canyonbot.music.messages.ResponseMessage;
 import com.mkkl.canyonbot.music.search.internal.sources.SearchSource;
@@ -28,6 +29,7 @@ public interface ShortPlaylistMessageGenerator extends ResponseMessage {
     Optional<String> query();
 
     User user();
+    ActionButton playButton();
 
     @Override
     default ResponseMessageData getMessage() {
@@ -56,20 +58,7 @@ public interface ShortPlaylistMessageGenerator extends ResponseMessage {
         if (selectedTrack != null)
             responseBuilder.addEmbed(Objects.requireNonNull(selectedTrackSpec(selectedTrack)));
         responseBuilder.addEmbed(embedBuilder.build());
-
-        //TODO for now I am handling button behavior here, but it should go somewhere else.
-        // Maybe create class derived from TempListenableButton that will define behavior of play button inside it's definition
-//        TempListenableButton button = TempListenableButton.builder(Button.primary("play", "Play"))
-//                .clickAction(event ->
-//                        Mono.just(event)
-//                        .zipWith(Mono.just(TrackQueueElement.listOf(playlist().getTracks(), user())))
-//                        .doOnNext((tuple -> trackQueueService().addAll(guild(), tuple.getT2())))
-//                        .flatMap(tuple -> tuple.getT1().reply("Playing " + tuple.getT2().size() + " tracks"))
-//                )
-//                .timeoutAction(() -> Mono.fromRunnable(() -> System.out.println("button timed out")))
-//                .build();
-//        responseBuilder.publisher(button.register(client(), Duration.ofMinutes(60)));
-        responseBuilder.addComponent(ActionRow.of(Button.primary("play", "Play")));
+        responseBuilder.addComponent(ActionRow.of(Button.primary(playButton().getId(), "Play")));
 
         return responseBuilder.build();
     }

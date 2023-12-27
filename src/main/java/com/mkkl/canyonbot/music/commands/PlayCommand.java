@@ -150,12 +150,11 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
 
         return event.deferReply()
                 .then(event.getInteraction().getGuild().doOnNext(guildMusicBotService::createGuildMusicBot))
-                .then(handleQuery(new CommandContext(event, query, sourceId, channel)))
+                .flatMap(guild -> handleQuery(new CommandContext(event, query, sourceId, channel, guild)))
                 .then();
     }
 
     private Mono<Message> handleQuery(CommandContext context) {
-        //TODO order of error checking is not easily modifiable, fix this
         Mono<SearchResult> searchResultMono;
         if(context.query.isEmpty())
             return Mono.error(new QueryNotFoundException(context.event.getInteraction()));
@@ -196,17 +195,13 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                 .playlist(audioPlaylist)
                 .source(searchResult.getSource())
                 .user(context.event.getInteraction().getUser())
+                .playButton(playlistAddAllButton)
                 .build()
                 .getMessage();
 
         Mono<Void> playMono = Mono.empty();
         if(audioPlaylist.getSelectedTrack() != null)
             playMono = playTrack(context, audioPlaylist.getSelectedTrack());
-
-//        playlistAddAllButton.onClick()
-//                .filter(event -> event.getMessageId().equals(message.getId()))
-//                ...
-//                .
 
 
         return playMono
@@ -216,13 +211,14 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
                         .build())
                         .flatMap(message -> playlistAddAllButton.onInteraction()
                                 .filter(event -> event.getMessageId().equals(message.getId()))
-                                .flatMap(event -> event.reply("Playing " + audioPlaylist.getTracks().size() + " tracks"))
+                                .flatMap(event ->
+                                        event.reply("Playing " + audioPlaylist.getTracks().size() + " tracks")
+                                                .then(Mono.fromRunnable(() -> guildTrackQueueService.addAll(context.guild, TrackQueueElement.listOf(audioPlaylist.getTracks(), context.event.getInteraction().getUser()))))
+                                )
                                 .flatMap(event -> Mono.just(message))
-                                .timeout(Duration.ofSeconds(5))
-                                .onErrorResume(TimeoutException.class, ignore -> {
-                                    System.out.println("siema");
-                                    return message.edit().withComponents(ActionRow.of(Button.link("https://github.com/Discord4J/Discord4J/blob/master/core/src/test/java/discord4j/core/ExampleInteractions.java#L218", "URL")));
-                                })
+                                .timeout(Duration.ofSeconds(60))
+                                .onErrorResume(TimeoutException.class, ignore ->
+                                        message.edit().withComponents(Possible.of(Optional.of(Collections.emptyList()))))
                                 .then(Mono.just(message))
                         )
                 );
@@ -276,7 +272,6 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
 
 
                 Mono<Void> startMono = trackSchedulerService.getState(guild) == TrackScheduler.State.STOPPED
-                        //TODO I am not sure if startPlaying should be mono or not
                     ? Mono.fromRunnable(() -> trackSchedulerService.startPlaying(guild))
                     : Mono.empty();
                 return enqueueMono
@@ -311,5 +306,6 @@ public class PlayCommand extends BotCommand implements AutoCompleteCommand {
         private final Optional<String> query;
         private final Optional<String> sourceId;
         private final Mono<Channel> channel;
+        private final Guild guild;
     }
 }
