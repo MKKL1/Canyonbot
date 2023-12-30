@@ -27,7 +27,9 @@ import java.util.Optional;
 
 @RegisterCommand
 public class ShowQueueCommand extends BotCommand {
-    public static final int ELEMENTS_PER_PAGE = 20;
+    public static final int ELEMENTS_PER_PAGE = 20; //TODO this may be command option
+    public static final String PAGE_OPTION_NAME = "page";
+    public static final int FIRST_PAGE = 1;
     private final GuildTrackQueueService guildTrackQueueService;
     private final GuildTrackSchedulerService guildTrackSchedulerService;
 
@@ -37,7 +39,7 @@ public class ShowQueueCommand extends BotCommand {
                 .name("queue")
                 .description("Shows the current queue")
                 .addOption(ApplicationCommandOptionData.builder()
-                        .name("page")
+                        .name(PAGE_OPTION_NAME)
                         .type(ApplicationCommandOption.Type.INTEGER.getValue())
                         .description("page")
                         .required(false)
@@ -49,45 +51,40 @@ public class ShowQueueCommand extends BotCommand {
 
     @Override
     public Mono<Void> execute(ChatInputInteractionEvent event) {
-        Interaction interaction = event.getInteraction();
-        return interaction.getGuild()
-                .flatMap(guild -> Mono.just(new Parameters(guild, interaction.getCommandInteraction()
-                        .flatMap(aci -> aci.getOption("page"))
+        return event.getInteraction().getGuild()
+                .flatMap(guild -> Mono.just(new Parameters(guild, event.getInteraction().getCommandInteraction()
+                        .flatMap(aci -> aci.getOption(PAGE_OPTION_NAME))
                         .flatMap(ApplicationCommandInteractionOption::getValue)
                         .map(ApplicationCommandInteractionOptionValue::asLong))))
+
                 .flatMap(parameters -> {
                     QueueMessage.Builder builder = QueueMessage.builder();
 
                     if (guildTrackQueueService.isPresent(parameters.guild))
                         builder.queueIterator(Objects.requireNonNull(guildTrackQueueService.iterator(parameters.guild)));
 
-                    long page = 0;
+                    long page = FIRST_PAGE;
+                    long maxPage = (long) Math.floor(((float) guildTrackQueueService.size(parameters.guild) / ELEMENTS_PER_PAGE) + 1);
                     if (parameters.page.isPresent()) {
                         page = parameters.page.get();
-                        if (page < 0)
-                            return Mono.error(new UserResponseMessage("Page option cannot be smaller than 0"));
-
-                        long maxPage = (long) Math.floor(((float) guildTrackQueueService.size(parameters.guild) / ELEMENTS_PER_PAGE) + 1);
-                        if (page > maxPage)
-                            page = maxPage;
+                        if (page < FIRST_PAGE) page = FIRST_PAGE;
+                        else if (page > maxPage) page = maxPage;
                     }
 
-                    QueueMessage queueMessage = builder
+                    return Mono.just(builder
                             .page(page)
+                            .maxPages(maxPage)
                             .elementsPerPage(ELEMENTS_PER_PAGE)
                             .caller(event.getInteraction()
                                     .getUser())
                             .currentTrack(guildTrackSchedulerService.getCurrentTrack(parameters.guild))
-                            .build();
-
-                    return event.reply(InteractionApplicationCommandCallbackSpec.builder()
-                            .addAllEmbeds(queueMessage.getMessage()
-                                    .embeds())
-                            .addAllComponents(queueMessage.getMessage()
-                                    .components())
                             .build());
-
                 })
+                .flatMap(queueMessage -> Mono.just(queueMessage.getMessage()))
+                .flatMap(messageData -> event.reply(InteractionApplicationCommandCallbackSpec.builder()
+                        .addAllEmbeds(messageData.embeds())
+                        .addAllComponents(messageData.components())
+                        .build()))
                 .then();
 
     }
