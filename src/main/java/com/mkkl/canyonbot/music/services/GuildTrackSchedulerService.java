@@ -11,6 +11,7 @@ import com.mkkl.canyonbot.music.player.queue.TrackSchedulerData;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
 import discord4j.core.object.entity.Guild;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 @Slf4j
 public class GuildTrackSchedulerService {
+    @Autowired
+    private GuildTrackQueueService guildTrackQueueService;
     private final Map<Guild, TrackScheduler> trackSchedulerDataMap = new ConcurrentHashMap<>();
 
     @EventListener
@@ -37,55 +40,49 @@ public class GuildTrackSchedulerService {
 
 
         guildMusicBot.getEventDispatcher().on(TrackEndEvent.class)
-                .flatMap(trackEndEvent -> {
-                    if (trackEndEvent.getEndReason() != AudioTrackEndReason.CLEANUP) {
-                        return Mono.fromRunnable(() -> {
-                            TrackQueueElement track = guildMusicBot.getTrackQueue().dequeue();
-                            trackScheduler.setCurrentTrack(track);
-                            if (track != null) {
-                                guildMusicBot.getPlayer().playTrack(track.getAudioTrack());
-                            } else {
-                                guildMusicBot.getEventDispatcher().publish(new QueueEmptyEvent(guildMusicBot, guildMusicBot.getTrackQueue()));
-                                trackScheduler.setState(TrackScheduler.State.STOPPED);
-                            }
-                        });
+            .doOnNext(trackEndEvent -> {
+                if (trackEndEvent.getEndReason() != AudioTrackEndReason.CLEANUP) {
+                    TrackQueueElement track = guildMusicBot.getTrackQueue().dequeue();
+                    trackScheduler.setCurrentTrack(track);
+                    if (track != null) {
+                        guildMusicBot.getPlayer().playTrack(track.getAudioTrack());
+                    } else {
+                        guildMusicBot.getEventDispatcher().publish(new QueueEmptyEvent(guildMusicBot.getGuild(), guildMusicBot.getTrackQueue()));
+                        trackScheduler.setState(TrackScheduler.State.STOPPED);
                     }
+                } else {
                     trackScheduler.setState(TrackScheduler.State.STOPPED);
                     trackScheduler.setCurrentTrack(null);
                     //Cleanup
                     //return guildMusicBotManager.leave();//TODO event here as well
-                    return Mono.empty();//TODO !!!leave
-                })
+                }
+            })
                 .subscribe();
         log.info("Created track scheduler for guild " + guildMusicBot.getGuild().getName());
     }
 
     public void startPlaying(Guild guild) { //Maybe we should use something like GuildSession to easily manage cleanup
-        //TODO remove checks outside of mono
         TrackScheduler trackScheduler = getOrThrow(guild);
         if (trackScheduler.getState() != TrackScheduler.State.STOPPED)
-            throw new IllegalStateException("Already playing");
+            return;
+//            throw new IllegalStateException("Already playing"); //Not sure if I should throw error or simply ignore
         TrackQueueElement trackQueueElement = trackScheduler.getGuildMusicBot().getTrackQueue().dequeue();
         if(trackQueueElement == null) throw new IllegalStateException("Queue is empty");
-        //TODO not sure if using setters with object is a good idea, it means this object is mutable, therefore it cannot be safely passed around
         trackScheduler.setCurrentTrack(trackQueueElement);
         trackScheduler.getGuildMusicBot().getPlayer().playTrack(trackQueueElement.getAudioTrack());
         trackScheduler.setState(TrackScheduler.State.PLAYING);
     }
 
-    //TODO it doesn't really need to be mono
-    public Mono<Void> stopPlaying(Guild guild) {
+    public void stopPlaying(Guild guild) {
         TrackScheduler trackScheduler = getOrThrow(guild);
         if (trackScheduler.getState() == TrackScheduler.State.STOPPED)
-            return Mono.error(new IllegalStateException("Already stopped"));
-        return Mono.fromRunnable(() -> {
-            trackScheduler.getGuildMusicBot().getTrackQueue().clear();
-            trackScheduler.getGuildMusicBot().getPlayer().stopTrack();
-            //TODO The longer I look at this, the more I think that TrackQueue should be non-generic
-            trackScheduler.setCurrentTrack(null);
-            trackScheduler.setState(TrackScheduler.State.STOPPED);
-            //TODO stop event
-        });
+            return;
+//            throw new IllegalStateException("Already stopped");
+        trackScheduler.getGuildMusicBot().getTrackQueue().clear();
+        trackScheduler.getGuildMusicBot().getPlayer().stopTrack();
+        trackScheduler.setCurrentTrack(null);
+        trackScheduler.setState(TrackScheduler.State.STOPPED);
+        //TODO stop event
     }
 
     public Mono<Void> playInstant(Guild guild, TrackQueueElement trackQueueElement) {
@@ -96,13 +93,15 @@ public class GuildTrackSchedulerService {
         return Mono.empty();
     }
 
-    public Mono<TrackQueueElement> skip(Guild guild) {
+    public Optional<TrackQueueElement> skip(Guild guild) {
         TrackScheduler trackScheduler = getOrThrow(guild);
         if (trackScheduler.getState() == TrackScheduler.State.STOPPED || trackScheduler.getCurrentTrack() == null)
-            return Mono.error(new IllegalStateException("Nothing to skip"));
+            return Optional.empty();
+//            return Mono.error(new IllegalStateException("Nothing to skip"));
         //TODO skip event
-        return Mono.just(Objects.requireNonNull(trackScheduler.getCurrentTrack()))
-                .then(Mono.fromRunnable(() -> trackScheduler.getGuildMusicBot().getPlayer().stopTrack()));
+        TrackQueueElement trackQueueElement = guildTrackQueueService.dequeue(guild);
+        trackScheduler.getGuildMusicBot().getPlayer().stopTrack();
+        return Optional.ofNullable(trackQueueElement);
     }
 
     //TODO maybe we can create TrackSchedulerRepository to manage TrackScheduler instances
@@ -117,6 +116,10 @@ public class GuildTrackSchedulerService {
 
     private TrackScheduler getOrThrow(Guild guild) {
         return getTrackSchedulerData(guild).orElseThrow(() -> new IllegalStateException("No scheduler for guild"));
+    }
+
+    public boolean isPresent(Guild guild) {
+        return trackSchedulerDataMap.containsKey(guild);
     }
 
     private Optional<TrackScheduler> getTrackSchedulerData(Guild guild) {

@@ -3,10 +3,16 @@ package com.mkkl.canyonbot.music.commands;
 import com.mkkl.canyonbot.commands.BotCommand;
 import com.mkkl.canyonbot.commands.DefaultErrorHandler;
 import com.mkkl.canyonbot.commands.RegisterCommand;
+import com.mkkl.canyonbot.commands.exceptions.UserResponseMessage;
+import com.mkkl.canyonbot.music.exceptions.GuildMusicBotNotCreated;
+import com.mkkl.canyonbot.music.player.TrackScheduler;
+import com.mkkl.canyonbot.music.player.queue.TrackQueueElement;
 import com.mkkl.canyonbot.music.services.GuildTrackSchedulerService;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import reactor.core.publisher.Mono;
+
+import java.util.Optional;
 
 @RegisterCommand
 public class SkipCommand extends BotCommand {
@@ -25,13 +31,12 @@ public class SkipCommand extends BotCommand {
     public Mono<Void> execute(ChatInputInteractionEvent event) {
         return event.getInteraction()
                 .getGuild()
-                .flatMap(trackSchedulerService::skip)
-                .flatMap(trackQueueElement -> event.reply("Skipping " + trackQueueElement.getAudioTrack().getInfo().title))
-                //TODO weird error handling
-                .onErrorResume(throwable -> {
-                    if (throwable instanceof IllegalStateException)
-                        return event.reply("Nothing to skip");
-                    return event.reply("Error while skipping track");
+                .flatMap(guild -> {
+                    if (!trackSchedulerService.isPresent(guild))
+                        return Mono.error(new GuildMusicBotNotCreated(guild));
+                    Optional<TrackQueueElement> skippedElement = trackSchedulerService.skip(guild);
+                    if(skippedElement.isEmpty()) return Mono.error(new UserResponseMessage("Nothing to skip"));
+                    return event.reply("Skipping " + skippedElement.get().getAudioTrack().getInfo().title);
                 });
     }
 }

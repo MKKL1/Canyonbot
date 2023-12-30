@@ -15,7 +15,7 @@ public interface QueueMessageGenerator extends ResponseMessage {
     Optional<Iterator<TrackQueueElement>> queueIterator();
     Optional<TrackQueueElement> currentTrack();
     @Value.Default
-    default int page() {
+    default long page() {
         return 0;
     }
     @Value.Default
@@ -36,8 +36,8 @@ public interface QueueMessageGenerator extends ResponseMessage {
             return ResponseMessageData.builder().addEmbed(embedBuilder.build()).build();
         }
 
-        int i = 0;
-        int startElement = elementsPerPage()*page();
+        long i = 0;
+        long startElement = elementsPerPage()*page();
         StringBuilder stringBuilder = new StringBuilder();
         if(currentTrack().isPresent())
             stringBuilder.append("Current: ").append(currentTrack().get().getAudioTrack().getInfo().title).append("\n");

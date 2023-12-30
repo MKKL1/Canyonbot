@@ -36,7 +36,7 @@ public class GuildMusicBotService {
                 .player(musicPlayerBase)
                 .trackQueue(new SimpleTrackQueue())
                 .build();
-        musicPlayerBase.registerEvents(guildMusicBot, guildMusicBot.getEventDispatcher());
+        musicPlayerBase.registerEvents(guildMusicBot.getGuild(), guildMusicBot.getEventDispatcher());
         guildMusicBotMap.put(guild, guildMusicBot);
         publisher.publish(new GuildPlayerCreationEvent(this, guildMusicBot));
         return guildMusicBot;

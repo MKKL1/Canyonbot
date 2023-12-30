@@ -1,6 +1,7 @@
 package com.mkkl.canyonbot.music.player;
 
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
+import discord4j.core.object.entity.Guild;
 import discord4j.voice.AudioProvider;
 import org.springframework.stereotype.Service;
 
@@ -9,7 +10,7 @@ public interface MusicPlayerBase {
     AudioProvider getAudioProvider();
     AudioTrack getPlayingTrack();
 
-    void registerEvents(GuildMusicBot guildMusicBotManager, MusicBotEventDispatcher eventDispatcher);
+    void registerEvents(Guild guild, MusicBotEventDispatcher eventDispatcher);
 
     void playTrack(AudioTrack track);
 

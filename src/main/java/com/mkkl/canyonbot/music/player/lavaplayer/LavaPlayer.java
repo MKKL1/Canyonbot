@@ -1,10 +1,10 @@
 package com.mkkl.canyonbot.music.player.lavaplayer;
 
-import com.mkkl.canyonbot.music.player.GuildMusicBot;
 import com.mkkl.canyonbot.music.player.MusicBotEventDispatcher;
 import com.mkkl.canyonbot.music.player.MusicPlayerBase;
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayer;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
+import discord4j.core.object.entity.Guild;
 import discord4j.voice.AudioProvider;
 
 public class LavaPlayer implements MusicPlayerBase {
@@ -28,8 +28,8 @@ public class LavaPlayer implements MusicPlayerBase {
     }
 
     @Override
-    public void registerEvents(GuildMusicBot guildMusicBotManager, MusicBotEventDispatcher eventDispatcher) {
-        audioPlayer.addListener(new LavaPlayerEventAdapter(guildMusicBotManager, eventDispatcher));
+    public void registerEvents(Guild guild, MusicBotEventDispatcher eventDispatcher) {
+        audioPlayer.addListener(new LavaPlayerEventAdapter(guild, eventDispatcher));
     }
 
     @Override
