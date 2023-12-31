@@ -58,24 +58,23 @@ public class PlaylistResultHandler implements SearchResultHandler {
                     audioPlaylist.getSelectedTrack());
 
 
-        return
-        playMono.then(context.getEvent().createFollowup(InteractionFollowupCreateSpec.builder()
+        return playMono.then(context.getEvent().createFollowup(InteractionFollowupCreateSpec.builder()
                         .addAllEmbeds(shortPlaylistMessage.embeds())
                         .addAllComponents(shortPlaylistMessage.components())
                         .build()))
         .flatMap(message -> playlistAddAllButton.onInteraction()
                 .filter(event -> event.getMessageId().equals(message.getId()))
                 .flatMap(event -> event.reply("Playing " + audioPlaylist.getTracks().size() + " tracks")
-                    .then(Mono.fromRunnable(() ->
+                    .and(Mono.fromRunnable(() ->
                             guildTrackQueueService.addAll(
                                     context.getGuild(),
                                     TrackQueueElement.listOf(
                                             audioPlaylist.getTracks(),
                                             context.getEvent().getInteraction().getUser()
                                     )
-                            )))
+                            ))).and(message.edit().withComponents(Possible.of(Optional.of(Collections.emptyList()))))
                 )
-                .flatMap(event -> Mono.just(message))
+                .flatMap(event -> Mono.just(message))//TODO this is not needed at all
                 .timeout(Duration.ofSeconds(60))
                 .onErrorResume(TimeoutException.class, ignore ->
                         message.edit().withComponents(Possible.of(Optional.of(Collections.emptyList()))))

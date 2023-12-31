@@ -1,8 +1,11 @@
 package com.mkkl.canyonbot.music.messages.generators;
 
+import com.mkkl.canyonbot.discord.interaction.ActionButton;
 import com.mkkl.canyonbot.music.messages.ResponseMessage;
 import com.mkkl.canyonbot.music.player.queue.TrackQueue;
 import com.mkkl.canyonbot.music.player.queue.TrackQueueElement;
+import discord4j.core.object.component.ActionRow;
+import discord4j.core.object.component.Button;
 import discord4j.core.object.entity.User;
 import discord4j.core.spec.EmbedCreateSpec;
 import org.immutables.value.Value;
@@ -29,6 +32,7 @@ public interface QueueMessageGenerator extends ResponseMessage {
     long maxPages();
 
     User caller();
+    ActionButton nextPageButton();
 
     //TODO this part of code requires massive refactoring
     @Override
@@ -83,6 +87,7 @@ public interface QueueMessageGenerator extends ResponseMessage {
         embedBuilder.description(stringBuilder.toString());
         return ResponseMessageData.builder()
                 .addEmbed(embedBuilder.build())
+                .addComponent(ActionRow.of(Button.primary(nextPageButton().getId(), "Next page")))
                 .build();
     }
 }

@@ -3,27 +3,32 @@ package com.mkkl.canyonbot.music.commands;
 import com.mkkl.canyonbot.commands.BotCommand;
 import com.mkkl.canyonbot.commands.DefaultErrorHandler;
 import com.mkkl.canyonbot.commands.RegisterCommand;
-import com.mkkl.canyonbot.commands.exceptions.UserResponseMessage;
+import com.mkkl.canyonbot.music.buttons.NextPageButton;
 import com.mkkl.canyonbot.music.messages.generators.QueueMessage;
+import com.mkkl.canyonbot.music.messages.generators.ResponseMessageData;
 import com.mkkl.canyonbot.music.services.GuildTrackQueueService;
 import com.mkkl.canyonbot.music.services.GuildTrackSchedulerService;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.command.ApplicationCommandOption;
-import discord4j.core.object.command.Interaction;
 import discord4j.core.object.entity.Guild;
 import discord4j.core.spec.InteractionApplicationCommandCallbackSpec;
+import discord4j.core.spec.InteractionReplyEditSpec;
 import discord4j.discordjson.json.ApplicationCommandOptionData;
 import discord4j.discordjson.json.ApplicationCommandRequest;
+import discord4j.discordjson.possible.Possible;
 import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 import reactor.core.publisher.Mono;
+import reactor.util.function.Tuple2;
+import reactor.util.function.Tuples;
 
+import java.time.Duration;
+import java.util.Collections;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
 
 @RegisterCommand
 public class ShowQueueCommand extends BotCommand {
@@ -32,9 +37,10 @@ public class ShowQueueCommand extends BotCommand {
     public static final int FIRST_PAGE = 1;
     private final GuildTrackQueueService guildTrackQueueService;
     private final GuildTrackSchedulerService guildTrackSchedulerService;
+    private final NextPageButton nextPageButton;
 
     protected ShowQueueCommand(GuildTrackQueueService guildTrackQueueService,
-                               DefaultErrorHandler errorHandler, GuildTrackSchedulerService guildTrackSchedulerService) {
+                               DefaultErrorHandler errorHandler, GuildTrackSchedulerService guildTrackSchedulerService, NextPageButton nextPageButton) {
         super(ApplicationCommandRequest.builder()
                 .name("queue")
                 .description("Shows the current queue")
@@ -47,6 +53,7 @@ public class ShowQueueCommand extends BotCommand {
                 .build(), errorHandler);
         this.guildTrackQueueService = guildTrackQueueService;
         this.guildTrackSchedulerService = guildTrackSchedulerService;
+        this.nextPageButton = nextPageButton;
     }
 
     @Override
@@ -56,37 +63,67 @@ public class ShowQueueCommand extends BotCommand {
                         .flatMap(aci -> aci.getOption(PAGE_OPTION_NAME))
                         .flatMap(ApplicationCommandInteractionOption::getValue)
                         .map(ApplicationCommandInteractionOptionValue::asLong))))
-
                 .flatMap(parameters -> {
-                    QueueMessage.Builder builder = QueueMessage.builder();
+                    //Quick and dirty solution
+                    Tuple2<ResponseMessageData, Long> messageDataTuple = createResponse(event, parameters);
+                    ResponseMessageData messageData = messageDataTuple.getT1();
+                    AtomicLong page = new AtomicLong(messageDataTuple.getT2());
 
-                    if (guildTrackQueueService.isPresent(parameters.guild))
-                        builder.queueIterator(Objects.requireNonNull(guildTrackQueueService.iterator(parameters.guild)));
 
-                    long page = FIRST_PAGE;
-                    long maxPage = (long) Math.floor(((float) guildTrackQueueService.size(parameters.guild) / ELEMENTS_PER_PAGE) + 1);
-                    if (parameters.page.isPresent()) {
-                        page = parameters.page.get();
-                        if (page < FIRST_PAGE) page = FIRST_PAGE;
-                        else if (page > maxPage) page = maxPage;
-                    }
 
-                    return Mono.just(builder
-                            .page(page)
-                            .maxPages(maxPage)
-                            .elementsPerPage(ELEMENTS_PER_PAGE)
-                            .caller(event.getInteraction()
-                                    .getUser())
-                            .currentTrack(guildTrackSchedulerService.getCurrentTrack(parameters.guild))
-                            .build());
+                    return event.reply(InteractionApplicationCommandCallbackSpec.builder()
+                            .addAllEmbeds(messageData.embeds())
+                            .addAllComponents(messageData.components())
+                            .build())
+                            .then(nextPageButton.onInteraction()
+                                    .filterWhen(buttonInteractionEvent -> event.getReply().flatMap(message -> Mono.just(message.getId().equals(buttonInteractionEvent.getMessageId()))))
+                                    .flatMap(buttonInteractionEvent -> {
+                                        page.addAndGet(1);
+                                        Tuple2<ResponseMessageData, Long> newResponseDataTuple = createResponse(event, new Parameters(parameters.guild, Optional.of(page.get())));
+                                        ResponseMessageData newResponseData = newResponseDataTuple.getT1();
+
+                                        return buttonInteractionEvent.deferReply().then(buttonInteractionEvent.getInteractionResponse().deleteInitialResponse()).then(
+                                                event.editReply(InteractionReplyEditSpec.builder()
+                                                .addAllEmbeds(newResponseData.embeds())
+                                                .addAllComponents(newResponseData.components())
+                                                .build()));
+
+                                    })
+                                    .timeout(Duration.ofSeconds(60))
+                                    .onErrorResume(TimeoutException.class, ignore ->
+                                            event.editReply().withComponents(Possible.of(Optional.of(Collections.emptyList()))))
+                                    .then()
+                            );
                 })
-                .flatMap(queueMessage -> Mono.just(queueMessage.getMessage()))
-                .flatMap(messageData -> event.reply(InteractionApplicationCommandCallbackSpec.builder()
-                        .addAllEmbeds(messageData.embeds())
-                        .addAllComponents(messageData.components())
-                        .build()))
+                        //.filter(buttonInteractionEvent -> buttonInteractionEvent.getMessageId() == event.getReply()))
+
                 .then();
 
+    }
+
+    private Tuple2<ResponseMessageData, Long> createResponse(ChatInputInteractionEvent event, Parameters parameters) {
+        QueueMessage.Builder builder = QueueMessage.builder();
+
+        if (guildTrackQueueService.isPresent(parameters.guild))
+            builder.queueIterator(Objects.requireNonNull(guildTrackQueueService.iterator(parameters.guild)));
+
+        long page = FIRST_PAGE;
+        long maxPage = (long) Math.floor(((float) guildTrackQueueService.size(parameters.guild) / ELEMENTS_PER_PAGE) + 1);
+        if (parameters.page.isPresent()) {
+            page = parameters.page.get();
+            if (page < FIRST_PAGE) page = FIRST_PAGE;
+            else if (page > maxPage) page = maxPage;
+        }
+
+        return Tuples.of(builder
+                .page(page)
+                .maxPages(maxPage)
+                .elementsPerPage(ELEMENTS_PER_PAGE)
+                .caller(event.getInteraction()
+                        .getUser())
+                .currentTrack(guildTrackSchedulerService.getCurrentTrack(parameters.guild))
+                .nextPageButton(nextPageButton)
+                .build().getMessage(), page);
     }
 
     @AllArgsConstructor
