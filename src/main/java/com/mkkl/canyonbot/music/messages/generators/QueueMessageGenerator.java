@@ -1,8 +1,6 @@
 package com.mkkl.canyonbot.music.messages.generators;
 
-import com.mkkl.canyonbot.discord.interaction.ActionButton;
 import com.mkkl.canyonbot.music.messages.ResponseMessage;
-import com.mkkl.canyonbot.music.player.queue.TrackQueue;
 import com.mkkl.canyonbot.music.player.queue.TrackQueueElement;
 import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;

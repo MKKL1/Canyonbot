@@ -1,6 +1,5 @@
 package com.mkkl.canyonbot.music.messages.generators;
 
-import com.mkkl.canyonbot.discord.interaction.ActionButton;
 import com.mkkl.canyonbot.music.messages.ResponseFormatUtils;
 import com.mkkl.canyonbot.music.messages.ResponseMessage;
 import com.mkkl.canyonbot.music.search.internal.sources.SearchSource;

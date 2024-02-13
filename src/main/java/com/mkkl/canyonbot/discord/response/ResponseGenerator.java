@@ -11,6 +11,9 @@ import discord4j.core.spec.MessageCreateFields;
 import discord4j.discordjson.possible.Possible;
 import discord4j.rest.util.AllowedMentions;
 import org.immutables.value.Value;
+import org.reactivestreams.Publisher;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.Collections;
 import java.util.List;
@@ -21,33 +24,36 @@ import static com.mkkl.canyonbot.discord.PossibleUtil.toPossible;
 @Value.Immutable
 public interface ResponseGenerator {
     Optional<String> content();
-
     Optional<Boolean> tts();
-
     Optional<Boolean> ephemeral();
     @Value.Default
     default List<EmbedCreateSpec> embeds() {
         return Collections.emptyList();
     }
-
     Optional<AllowedMentions> allowedMentions();
     @Value.Default
     default List<LayoutComponent> components() {
         return Collections.emptyList();
     }
-
-    default InteractionApplicationCommandCallbackSpec asCallbackSpec() {
-        return InteractionApplicationCommandCallbackSpec.builder()
+    Optional<ResponseInteraction> interaction();
+    default Mono<InteractionApplicationCommandCallbackSpec> asCallbackSpec() {
+        return Mono.just(InteractionApplicationCommandCallbackSpec.builder()
                 .content(toPossible(content()))
                 .tts(toPossible(tts()))
                 .ephemeral(toPossible(ephemeral()))
                 .embeds(embeds())
                 .allowedMentions(toPossible(allowedMentions()))
                 .components(components())
-                .build();
+                .build())
+                //TODO I don't like this solution
+                .flatMap(c -> {
+                    if(interaction().isPresent())
+                        return interaction().get().interaction().then(Mono.just(c));
+                    return Mono.just(c);
+                });
     }
 
-    default InteractionFollowupCreateSpec asFollowupSpec() {
+    default Mono<InteractionFollowupCreateSpec> asFollowupSpec() {
         InteractionFollowupCreateSpec.Builder builder = InteractionFollowupCreateSpec.builder();
         builder.content(toPossible(content()))
                 .ephemeral(toPossible(ephemeral()))
@@ -57,6 +63,6 @@ public interface ResponseGenerator {
             builder.tts(tts().get());
 
         builder.embeds(embeds());
-        return builder.build();
+        return Mono.just(builder.build());
     }
 }

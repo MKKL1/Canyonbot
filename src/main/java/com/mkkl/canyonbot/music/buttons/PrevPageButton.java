@@ -1,6 +1,5 @@
 package com.mkkl.canyonbot.music.buttons;
 
-import com.mkkl.canyonbot.discord.interaction.ActionButton;
 import discord4j.core.GatewayDiscordClient;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
