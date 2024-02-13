@@ -56,7 +56,6 @@ public interface PaginationGenerator<T extends EmbedCreateSpec> {
     default Response asResponse(Mono<GatewayDiscordClient> gateway) {
         Response.Builder builder = Response.builder();
         builder.addEmbed(pageConstructor().apply(new PageData(currentPage(), pages(), sizePerPage())));
-        //builder.addComponent(ActionRow.of(CustomButton.builder().id("a").label("AA").build().asDiscordButton()));
         CustomButton nextButton = ImmutableCustomButton.builder().interaction(event -> event.editReply("Next")).id("next").build();
         CustomButton prevButton = ImmutableCustomButton.builder().interaction(event -> event.editReply("Prev")).id("prev").build();
         builder.addComponent(ActionRow.of(nextButton.asMessageComponent(), prevButton.asMessageComponent()));

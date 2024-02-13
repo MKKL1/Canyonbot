@@ -3,7 +3,6 @@ package com.mkkl.canyonbot.music.commands;
 import com.mkkl.canyonbot.commands.BotCommand;
 import com.mkkl.canyonbot.commands.DefaultErrorHandler;
 import com.mkkl.canyonbot.commands.RegisterCommand;
-import com.mkkl.canyonbot.music.buttons.NextPageButton;
 import com.mkkl.canyonbot.music.services.GuildTrackQueueService;
 import com.mkkl.canyonbot.music.services.GuildTrackSchedulerService;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
@@ -23,10 +22,9 @@ public class ShowQueueCommand extends BotCommand {
     public static final int FIRST_PAGE = 1;
     private final GuildTrackQueueService guildTrackQueueService;
     private final GuildTrackSchedulerService guildTrackSchedulerService;
-    private final NextPageButton nextPageButton;
 
     protected ShowQueueCommand(GuildTrackQueueService guildTrackQueueService,
-                               DefaultErrorHandler errorHandler, GuildTrackSchedulerService guildTrackSchedulerService, NextPageButton nextPageButton) {
+                               DefaultErrorHandler errorHandler, GuildTrackSchedulerService guildTrackSchedulerService) {
         super(ApplicationCommandRequest.builder()
                 .name("queue")
                 .description("Shows the current queue")
@@ -39,7 +37,6 @@ public class ShowQueueCommand extends BotCommand {
                 .build(), errorHandler);
         this.guildTrackQueueService = guildTrackQueueService;
         this.guildTrackSchedulerService = guildTrackSchedulerService;
-        this.nextPageButton = nextPageButton;
     }
 
     @Override
