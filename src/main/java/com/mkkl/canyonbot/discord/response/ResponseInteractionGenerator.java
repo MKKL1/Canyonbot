@@ -26,12 +26,13 @@ public interface ResponseInteractionGenerator {
     default Mono<Void> interaction() {
         return gateway().flatMap(gateway ->
                 gateway.on(ComponentInteractionEvent.class)
+                .doOnNext(e -> System.out.println(e.getCustomId()))
                 //iterate over all interactable components
                 .zipWith(Flux.fromIterable(interactableComponents()))
                 .filter(objects -> {
                     ComponentInteractionEvent event = objects.getT1();
                     InteractableComponent<ComponentInteractionEvent> component = (InteractableComponent<ComponentInteractionEvent>) objects.getT2();
-                    return component.getId().isPresent() && event.getCustomId().equals(component.getId().get());
+                    return event.getCustomId().equals(component.getId());
                 })
                 .flatMap(objects -> {
                     ComponentInteractionEvent event = objects.getT1();

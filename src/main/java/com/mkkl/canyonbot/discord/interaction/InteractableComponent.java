@@ -12,6 +12,6 @@ import java.util.function.Function;
 
 public interface InteractableComponent<T extends ComponentInteractionEvent> {
     Function<T, Publisher<?>> getInteraction();
-    Optional<String> getId();
+    String getId();
     ActionComponent asMessageComponent();
 }

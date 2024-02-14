@@ -17,7 +17,10 @@ import static com.mkkl.canyonbot.discord.PossibleUtil.toPossible;
 
 @Value.Immutable
 public abstract class CustomButton implements InteractableComponent<ButtonInteractionEvent> {
-    public abstract Optional<String> id();
+    @Value.Default
+    public String id() {
+        return Snowflake.of(Instant.now()).asString();
+    }
     public abstract Optional<String> label();
     public abstract Optional<ReactionEmoji> emoji();
     @Value.Default
@@ -26,7 +29,7 @@ public abstract class CustomButton implements InteractableComponent<ButtonIntera
     }
 
     @Override
-    public Optional<String> getId() {
+    public String getId() {
         return id();
     }
 
@@ -38,9 +41,9 @@ public abstract class CustomButton implements InteractableComponent<ButtonIntera
         if(emoji().isPresent())
             builder.emoji(emoji().get().asEmojiData());
         if(style() == Button.Style.LINK)
-            builder.url(toPossible(id()));
+            builder.url(id());
         else {
-            builder.customId(Snowflake.of(Instant.now()).asString());
+            builder.customId(id());
         }
 
         //Discord4j button doesn't have a constructor with all fields (it only provides factory methods) so we have to use reflection

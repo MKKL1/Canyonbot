@@ -54,10 +54,7 @@ public class PlaylistResultHandler implements SearchResultHandler {
                     context.getEvent().getInteraction(),
                     audioPlaylist.getSelectedTrack());
 
-
-        return playMono.then(context.getEvent().createFollowup(InteractionFollowupCreateSpec.builder()
-                        .addAllEmbeds(shortPlaylistMessage.embeds())
-                        .addAllComponents(shortPlaylistMessage.components())
-                        .build()));
+        return playMono.then(context.getEvent().createFollowup(shortPlaylistMessage.asFollowupSpec()))
+                .then(shortPlaylistMessage.getResponseInteraction().get().interaction());
     }
 }

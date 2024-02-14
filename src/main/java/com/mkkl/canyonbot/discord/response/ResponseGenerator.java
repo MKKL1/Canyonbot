@@ -35,25 +35,22 @@ public interface ResponseGenerator {
     default List<LayoutComponent> components() {
         return Collections.emptyList();
     }
-    Optional<ResponseInteraction> interaction();
-    default Mono<InteractionApplicationCommandCallbackSpec> asCallbackSpec() {
-        return Mono.just(InteractionApplicationCommandCallbackSpec.builder()
+    Optional<ResponseInteraction> interaction();//TODO chaining those requires interaction().get().interaction(), it isn't very clear what's happening
+    default Optional<ResponseInteraction> getResponseInteraction() {
+        return interaction();
+    }
+    default InteractionApplicationCommandCallbackSpec asCallbackSpec() {
+        return InteractionApplicationCommandCallbackSpec.builder()
                 .content(toPossible(content()))
                 .tts(toPossible(tts()))
                 .ephemeral(toPossible(ephemeral()))
                 .embeds(embeds())
                 .allowedMentions(toPossible(allowedMentions()))
                 .components(components())
-                .build())
-                //TODO I don't like this solution
-                .flatMap(c -> {
-                    if(interaction().isPresent())
-                        return interaction().get().interaction().then(Mono.just(c));
-                    return Mono.just(c);
-                });
+                .build();
     }
 
-    default Mono<InteractionFollowupCreateSpec> asFollowupSpec() {
+    default InteractionFollowupCreateSpec asFollowupSpec() {
         InteractionFollowupCreateSpec.Builder builder = InteractionFollowupCreateSpec.builder();
         builder.content(toPossible(content()))
                 .ephemeral(toPossible(ephemeral()))
@@ -63,6 +60,6 @@ public interface ResponseGenerator {
             builder.tts(tts().get());
 
         builder.embeds(embeds());
-        return Mono.just(builder.build());
+        return builder.build();
     }
 }
