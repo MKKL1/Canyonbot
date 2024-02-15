@@ -12,6 +12,7 @@ import org.immutables.value.Value;
 
 import java.time.Instant;
 import java.util.Optional;
+import java.util.UUID;
 
 import static com.mkkl.canyonbot.discord.PossibleUtil.toPossible;
 
@@ -19,7 +20,7 @@ import static com.mkkl.canyonbot.discord.PossibleUtil.toPossible;
 public abstract class CustomButton implements InteractableComponent<ButtonInteractionEvent> {
     @Value.Default
     public String id() {
-        return Snowflake.of(Instant.now()).asString();
+        return UUID.randomUUID().toString();
     }
     public abstract Optional<String> label();
     public abstract Optional<ReactionEmoji> emoji();

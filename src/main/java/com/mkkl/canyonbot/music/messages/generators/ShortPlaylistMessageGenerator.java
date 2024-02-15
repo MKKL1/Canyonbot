@@ -11,17 +11,20 @@ import com.mkkl.canyonbot.music.messages.SearchResponseConst;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import discord4j.core.GatewayDiscordClient;
+import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.object.component.ActionRow;
 import discord4j.core.object.component.Button;
 import discord4j.core.object.entity.User;
 import discord4j.core.spec.EmbedCreateSpec;
 import org.immutables.value.Value;
+import org.reactivestreams.Publisher;
 import org.springframework.beans.factory.annotation.Configurable;
 import reactor.core.publisher.Mono;
 
 import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 
 //TODO may need to use lombok anyway
 @Configurable
@@ -32,6 +35,7 @@ public interface ShortPlaylistMessageGenerator extends ResponseMessage {
     Optional<String> query();
     User user();
     Mono<GatewayDiscordClient> gateway();
+    Function<ButtonInteractionEvent, Publisher<?>> onPlay();
 
     @Override
     default Response getMessage() {
@@ -56,8 +60,7 @@ public interface ShortPlaylistMessageGenerator extends ResponseMessage {
                 .getAvatarUrl());
 
         CustomButton playButton = ImmutableCustomButton.builder()
-                .interaction(event -> event.reply("playing!"))
-                .id("play")
+                .interaction(onPlay())
                 .label("Play")
                 .build();
         Response.Builder responseBuilder = Response.builder();

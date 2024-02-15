@@ -20,6 +20,7 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicStampedReference;
 
 @Service
 public class PlaylistResultHandler implements SearchResultHandler {
@@ -37,12 +38,14 @@ public class PlaylistResultHandler implements SearchResultHandler {
         assert searchResult.getPlaylists() != null;
         AudioPlaylist audioPlaylist = searchResult.getPlaylists().getFirst();
         assert audioPlaylist != null;
+
         Response shortPlaylistMessage = ShortPlaylistMessage.builder()
                 .query(context.getQuery())
                 .playlist(audioPlaylist)
                 .source(searchResult.getSource())
                 .user(context.getEvent().getInteraction().getUser())
                 .gateway(gateway)
+                .onPlay(event -> event.reply(audioPlaylist.getSelectedTrack().getIdentifier()))
                 .build()
                 .getMessage();
 
