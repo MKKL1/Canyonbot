@@ -1,6 +1,7 @@
 package com.mkkl.canyonbot.music.services.search;
 
 import com.mkkl.canyonbot.discord.response.Response;
+import com.mkkl.canyonbot.discord.utils.TimeoutUtils;
 import com.mkkl.canyonbot.music.commands.PlayCommand;
 import com.mkkl.canyonbot.music.messages.generators.ResponseMessageData;
 import com.mkkl.canyonbot.music.messages.generators.ShortPlaylistMessage;
@@ -45,7 +46,18 @@ public class PlaylistResultHandler implements SearchResultHandler {
                 .source(searchResult.getSource())
                 .user(context.getEvent().getInteraction().getUser())
                 .gateway(gateway)
-                .onPlay(event -> event.reply(audioPlaylist.getSelectedTrack().getIdentifier()))
+                .onPlay(event ->
+                        event.reply("Playing " + audioPlaylist.getTracks().size() + " tracks")
+                                .and(Mono.fromRunnable(() ->
+                                        guildTrackQueueService.addAll(
+                                                context.getGuild(),
+                                                TrackQueueElement.listOf(
+                                                        audioPlaylist.getTracks(),
+                                                        context.getEvent().getInteraction().getUser()
+                                                )
+                                        )))
+                                .and(Mono.justOrEmpty(event.getMessage()).flatMap(TimeoutUtils::clearActionBar))
+                )
                 .build()
                 .getMessage();
 
@@ -57,7 +69,7 @@ public class PlaylistResultHandler implements SearchResultHandler {
                     context.getEvent().getInteraction(),
                     audioPlaylist.getSelectedTrack());
 
-        return playMono.then(context.getEvent().createFollowup(shortPlaylistMessage.asFollowupSpec()))
-                .then(shortPlaylistMessage.getResponseInteraction().get().interaction());
+        return playMono.then(context.getEvent().createFollowup(shortPlaylistMessage.asFollowupSpec())
+                        .flatMap(message -> shortPlaylistMessage.getResponseInteraction().get().interaction(message)));
     }
 }

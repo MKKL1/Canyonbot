@@ -1,6 +1,7 @@
 package com.mkkl.canyonbot.music.messages.generators;
 
 import com.mkkl.canyonbot.discord.response.Response;
+import com.mkkl.canyonbot.discord.utils.pagination.PageData;
 import com.mkkl.canyonbot.discord.utils.pagination.Pagination;
 import com.mkkl.canyonbot.discord.utils.pagination.PaginationGenerator;
 import com.mkkl.canyonbot.music.messages.ResponseMessage;
@@ -34,8 +35,52 @@ public interface QueueMessageGenerator extends ResponseMessage {
 
     @Override
     default Response getMessage() {
+        if(queueIterator().isEmpty()) return Response.builder().content("Empty").build();
+
+
+
         return Pagination.builder()
-                .pageConstructor(pageData -> EmbedCreateSpec.builder().description("sus").title("amogus").build())
+                .pageConstructor(pageData -> {
+                    long i = 0;
+                    long startElement = pageData.getPerPage() * (pageData.getPage() - 1);
+                    long endElement = elementsPerPage() * (pageData.getPage());
+                    StringBuilder stringBuilder = new StringBuilder();
+
+                    if (currentTrack().isPresent())
+                        stringBuilder.append("Current: ")
+                                .append(currentTrack().get()
+                                        .getAudioTrack()
+                                        .getInfo().title)
+                                .append("\n");
+
+                    stringBuilder.append("Page ")
+                            .append(page())
+                            .append("/")
+                            .append(pageData.getSize())
+                            .append("\n");
+
+                    for (Iterator<TrackQueueElement> it = queueIterator().get(); it.hasNext(); i++) {
+
+                        TrackQueueElement trackQueueElement = it.next();
+                        if (trackQueueElement == null)
+                            break;
+
+                        if (i < startElement) continue;
+                        if (i >= endElement) break;
+
+                        stringBuilder.append(i + 1)
+                                .append(". ")
+                                .append(trackQueueElement.getAudioTrack()
+                                        .getInfo().title)
+                                .append("\n");
+
+                    }
+
+                    return EmbedCreateSpec.builder().description(stringBuilder.toString()).build();
+                })
+                .pages(maxPages())
+                .currentPage(page())
+                .sizePerPage(elementsPerPage())
                 .build()
                 .asResponse(gateway());
     }

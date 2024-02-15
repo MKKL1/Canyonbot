@@ -4,6 +4,7 @@ import com.mkkl.canyonbot.discord.interaction.CustomButton;
 import com.mkkl.canyonbot.discord.interaction.ImmutableCustomButton;
 import com.mkkl.canyonbot.discord.response.Response;
 import com.mkkl.canyonbot.discord.response.ResponseInteraction;
+import com.mkkl.canyonbot.discord.utils.TimeoutUtils;
 import com.mkkl.canyonbot.music.messages.ResponseFormatUtils;
 import com.mkkl.canyonbot.music.messages.ResponseMessage;
 import com.mkkl.canyonbot.music.search.internal.sources.SearchSource;
@@ -13,7 +14,6 @@ import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.object.component.ActionRow;
-import discord4j.core.object.component.Button;
 import discord4j.core.object.entity.User;
 import discord4j.core.spec.EmbedCreateSpec;
 import org.immutables.value.Value;
@@ -21,6 +21,7 @@ import org.reactivestreams.Publisher;
 import org.springframework.beans.factory.annotation.Configurable;
 import reactor.core.publisher.Mono;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
@@ -72,6 +73,8 @@ public interface ShortPlaylistMessageGenerator extends ResponseMessage {
         responseBuilder.interaction(ResponseInteraction.builder()
                 .addInteractableComponent(playButton)
                 .gateway(gateway())
+                .timeout(Duration.ofSeconds(60))
+                .onTimeout(TimeoutUtils::clearActionBar)
                 .build());
 
         return responseBuilder.build();

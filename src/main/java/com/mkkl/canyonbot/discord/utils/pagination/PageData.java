@@ -4,7 +4,7 @@ import lombok.Data;
 
 @Data
 public class PageData {
-    private final int page;
-    private final int size;
-    private final int perPage;
+    private final long page;
+    private final long size;
+    private final long perPage;
 }

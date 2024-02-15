@@ -16,6 +16,7 @@ import java.util.UUID;
 
 import static com.mkkl.canyonbot.discord.PossibleUtil.toPossible;
 
+//TODO Build interactable button from normal button
 @Value.Immutable
 public abstract class CustomButton implements InteractableComponent<ButtonInteractionEvent> {
     @Value.Default

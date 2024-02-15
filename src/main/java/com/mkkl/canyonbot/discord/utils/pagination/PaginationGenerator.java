@@ -43,22 +43,33 @@ import static com.mkkl.canyonbot.discord.PossibleUtil.mapPossible;
 @Value.Immutable
 public interface PaginationGenerator<T extends EmbedCreateSpec> {
     Function<PageData, T> pageConstructor();
-    int pages();
+    long pages();
     @Value.Default
-    default int sizePerPage() {
+    default long sizePerPage() {
         return 10;
     }
     @Value.Default
-    default int currentPage() {
+    default long currentPage() {
         return 0;
     }
 
     default Response asResponse(Mono<GatewayDiscordClient> gateway) {
         Response.Builder builder = Response.builder();
+        PaginationController<T> paginationController = new PaginationController<>(currentPage(), sizePerPage(), pages(), pageConstructor());
         builder.addEmbed(pageConstructor().apply(new PageData(currentPage(), pages(), sizePerPage())));
-        CustomButton nextButton = ImmutableCustomButton.builder().interaction(event -> event.editReply("Next")).id("next").build();
-        CustomButton prevButton = ImmutableCustomButton.builder().interaction(event -> event.editReply("Prev")).id("prev").build();
-        builder.addComponent(ActionRow.of(nextButton.asMessageComponent(), prevButton.asMessageComponent()));
+        CustomButton nextButton = ImmutableCustomButton.builder()
+                .label(">")
+                .interaction(event -> event.getMessage().orElseThrow()
+                        .edit()
+                        .withEmbeds(paginationController.next())
+                ).build();
+        CustomButton prevButton = ImmutableCustomButton.builder()
+                .label("<")
+                .interaction(event -> event.getMessage().orElseThrow()
+                    .edit()
+                    .withEmbeds(paginationController.prev())
+                ).build();
+        builder.addComponent(ActionRow.of(prevButton.asMessageComponent(), nextButton.asMessageComponent()));
         builder.interaction(ResponseInteraction.builder()
                 .addInteractableComponent(nextButton)
                 .addInteractableComponent(prevButton)
