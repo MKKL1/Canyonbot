@@ -1,5 +1,6 @@
 package com.mkkl.canyonbot.music.messages.generators;
 
+import com.mkkl.canyonbot.discord.response.Response;
 import com.mkkl.canyonbot.music.messages.ResponseFormatUtils;
 import com.mkkl.canyonbot.music.messages.ResponseMessage;
 import com.mkkl.canyonbot.music.messages.SearchResponseConst;
@@ -24,7 +25,7 @@ public interface AudioTrackMessageGenerator extends ResponseMessage {
     Optional<User> user();
 
     @Override
-    default ResponseMessageData getMessage() {
+    default Response getMessage() {
         EmbedCreateSpec.Builder embedBuilder = EmbedCreateSpec.builder();
         embedBuilder.title(audioTrack().getInfo().title);
         if(query().isPresent()) embedBuilder.description(query().get());
@@ -39,7 +40,7 @@ public interface AudioTrackMessageGenerator extends ResponseMessage {
         embedBuilder.timestamp(Instant.now());
         if(audioTrack().getInfo().artworkUrl != null) embedBuilder.image(audioTrack().getInfo().artworkUrl);
         if(user().isPresent()) embedBuilder.footer(user().get().getUsername(), user().get().getAvatarUrl());
-        return ResponseMessageData.builder()
+        return Response.builder()
                 .addEmbed(embedBuilder.build())
                 .build();
     }

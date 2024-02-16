@@ -1,38 +1,45 @@
 package com.mkkl.canyonbot.music.messages.generators;
 
-import com.mkkl.canyonbot.discord.interaction.ActionButton;
+import com.mkkl.canyonbot.discord.interaction.CustomButton;
+import com.mkkl.canyonbot.discord.interaction.ImmutableCustomButton;
+import com.mkkl.canyonbot.discord.response.Response;
+import com.mkkl.canyonbot.discord.response.ResponseInteraction;
+import com.mkkl.canyonbot.discord.utils.TimeoutUtils;
 import com.mkkl.canyonbot.music.messages.ResponseFormatUtils;
 import com.mkkl.canyonbot.music.messages.ResponseMessage;
 import com.mkkl.canyonbot.music.search.internal.sources.SearchSource;
 import com.mkkl.canyonbot.music.messages.SearchResponseConst;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
+import discord4j.core.GatewayDiscordClient;
+import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.object.component.ActionRow;
-import discord4j.core.object.component.Button;
 import discord4j.core.object.entity.User;
 import discord4j.core.spec.EmbedCreateSpec;
 import org.immutables.value.Value;
+import org.reactivestreams.Publisher;
 import org.springframework.beans.factory.annotation.Configurable;
+import reactor.core.publisher.Mono;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 
 //TODO may need to use lombok anyway
 @Configurable
 @Value.Immutable
 public interface ShortPlaylistMessageGenerator extends ResponseMessage {
     AudioPlaylist playlist();
-
     Optional<SearchSource> source();
-
     Optional<String> query();
-
     User user();
-    ActionButton playButton();
+    Mono<GatewayDiscordClient> gateway();
+    Function<ButtonInteractionEvent, Publisher<?>> onPlay();
 
     @Override
-    default ResponseMessageData getMessage() {
+    default Response getMessage() {
         EmbedCreateSpec.Builder embedBuilder = EmbedCreateSpec.builder();
         embedBuilder.title(playlist().getName());
         //embedBuilder.url(playlist.getUri()); //TODO add playlist uri
@@ -53,12 +60,22 @@ public interface ShortPlaylistMessageGenerator extends ResponseMessage {
                 .getUsername(), user()
                 .getAvatarUrl());
 
-        ResponseMessageData.Builder responseBuilder = ResponseMessageData.builder();
+        CustomButton playButton = ImmutableCustomButton.builder()
+                .interaction(onPlay())
+                .label("Play")
+                .build();
+        Response.Builder responseBuilder = Response.builder();
         AudioTrack selectedTrack = playlist().getSelectedTrack();
         if (selectedTrack != null)
             responseBuilder.addEmbed(Objects.requireNonNull(selectedTrackSpec(selectedTrack)));
         responseBuilder.addEmbed(embedBuilder.build());
-        responseBuilder.addComponent(ActionRow.of(Button.primary(playButton().getId(), "Play")));
+        responseBuilder.addComponent(ActionRow.of(playButton.asMessageComponent()));
+        responseBuilder.interaction(ResponseInteraction.builder()
+                .addInteractableComponent(playButton)
+                .gateway(gateway())
+                .timeout(Duration.ofSeconds(60))
+                .onTimeout(TimeoutUtils::clearActionBar)
+                .build());
 
         return responseBuilder.build();
     }
@@ -71,7 +88,8 @@ public interface ShortPlaylistMessageGenerator extends ResponseMessage {
         builder.user(user());
         return builder.build()
                 .getMessage()
-                .firstEmbed();
+                .embeds()
+                .getFirst();
     }
 
 }

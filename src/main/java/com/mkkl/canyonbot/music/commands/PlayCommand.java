@@ -1,13 +1,9 @@
 package com.mkkl.canyonbot.music.commands;
 
-import com.mkkl.canyonbot.commands.AutoCompleteCommand;
 import com.mkkl.canyonbot.commands.BotCommand;
 import com.mkkl.canyonbot.commands.DefaultErrorHandler;
 import com.mkkl.canyonbot.commands.RegisterCommand;
-import com.mkkl.canyonbot.music.buttons.PlaylistAddAllButton;
 import com.mkkl.canyonbot.music.exceptions.*;
-import com.mkkl.canyonbot.music.messages.generators.*;
-import com.mkkl.canyonbot.music.player.queue.TrackQueueElement;
 import com.mkkl.canyonbot.music.search.SearchService;
 import com.mkkl.canyonbot.music.search.SearchResult;
 import com.mkkl.canyonbot.music.search.SourceRegistry;
@@ -15,32 +11,22 @@ import com.mkkl.canyonbot.music.search.internal.sources.SearchSource;
 import com.mkkl.canyonbot.music.services.*;
 import com.mkkl.canyonbot.music.services.search.PlaylistResultHandler;
 import com.mkkl.canyonbot.music.services.search.TrackResultHandler;
-import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
-import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
-import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.command.ApplicationCommandOption;
 import discord4j.core.object.entity.Guild;
-import discord4j.core.object.entity.Message;
 import discord4j.core.object.entity.channel.Channel;
-import discord4j.core.spec.InteractionFollowupCreateSpec;
 import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
 import discord4j.discordjson.json.ApplicationCommandOptionData;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import discord4j.discordjson.json.ImmutableApplicationCommandOptionChoiceData;
-import discord4j.discordjson.possible.Possible;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import org.reactivestreams.Publisher;
-import org.springframework.beans.factory.annotation.Autowired;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-import java.time.Duration;
 import java.util.*;
-import java.util.concurrent.TimeoutException;
 
 //TODO refactoring needed, this class handles too many operations
 @RegisterCommand

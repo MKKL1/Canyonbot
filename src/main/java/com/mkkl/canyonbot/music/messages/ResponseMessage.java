@@ -1,8 +1,7 @@
 package com.mkkl.canyonbot.music.messages;
 
-import com.mkkl.canyonbot.music.messages.generators.ResponseMessageData;
-import com.mkkl.canyonbot.music.messages.generators.ResponseMessageDataGenerator;
+import com.mkkl.canyonbot.discord.response.Response;
 
 public interface ResponseMessage {
-    ResponseMessageData getMessage();
+    Response getMessage();
 }

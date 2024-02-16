@@ -1,5 +1,6 @@
 package com.mkkl.canyonbot.music.messages.generators;
 
+import com.mkkl.canyonbot.discord.response.Response;
 import com.mkkl.canyonbot.music.messages.ResponseMessage;
 import com.mkkl.canyonbot.music.messages.SearchResponseConst;
 import discord4j.core.object.entity.User;
@@ -14,13 +15,13 @@ public interface ErrorMessageGenerator extends ResponseMessage {
     String message();
 
     @Override
-    default ResponseMessageData getMessage() {
+    default Response getMessage() {
         EmbedCreateSpec.Builder builder = EmbedCreateSpec.builder();
         builder.title("Error");
         builder.description(message());
         builder.color(SearchResponseConst.ERROR_COLOR);
         builder.timestamp(Instant.now());
         builder.footer(user().getUsername(), user().getAvatarUrl());
-        return ResponseMessageData.builder().addEmbed(builder.build()).build();
+        return Response.builder().addEmbed(builder.build()).build();
     }
 }
