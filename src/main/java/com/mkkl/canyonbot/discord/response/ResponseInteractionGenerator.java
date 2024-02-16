@@ -26,33 +26,34 @@ public interface ResponseInteractionGenerator {
     Mono<GatewayDiscordClient> gateway();
     Optional<Duration> timeout();
     @Value.Default
-    default Function<Message, Mono<Void>> onTimeout() {
+    default Function<Message, Publisher<?>> onTimeout() {
         return message -> Mono.empty();
     }
 
+    //Sometimes it's better to not pass message TODO remove message argument?
     default Mono<Void> interaction(Message message) {
-         Mono<Void> mono = gateway().flatMap(gateway ->
-                gateway.on(ComponentInteractionEvent.class)
-                        .doOnNext(e -> System.out.println(e.getCustomId()))
-                        //iterate over all interactable components
-                        .zipWith(Flux.fromIterable(interactableComponents()))
-                        .filter(objects -> {
-                            ComponentInteractionEvent event = objects.getT1();
-                            InteractableComponent<ComponentInteractionEvent> component = (InteractableComponent<ComponentInteractionEvent>) objects.getT2();
-                            return event.getCustomId()
-                                    .equals(component.getId());
-                        })
-                        .flatMap(objects -> {
-                            ComponentInteractionEvent event = objects.getT1();
-                            InteractableComponent<ComponentInteractionEvent> component = (InteractableComponent<ComponentInteractionEvent>) objects.getT2();
-                            return component.getInteraction()
-                                    .apply(event);
-                        }).then());
-         if(timeout().isPresent()) {
-             mono = mono
-                     .timeout(timeout().get())
-                     .onErrorResume(TimeoutException.class, ignore -> onTimeout().apply(message));
-         }
-         return mono;
+         return gateway().flatMap(gateway -> {
+             Flux<?> flux = gateway.on(ComponentInteractionEvent.class, e -> {
+                 System.out.println(e.getCustomId());//debug log
+                 return Flux.fromIterable(interactableComponents())
+                         .filter(component -> e.getCustomId()
+                                 .equals(component.getId()))
+                         .flatMap(component -> ((InteractableComponent<ComponentInteractionEvent>) component).getInteraction()
+                                 .apply(e));
+             });
+
+             if(timeout().isPresent()) {
+                 return flux
+                         .timeout(timeout().get())
+                         .onErrorResume(TimeoutException.class, ignore -> handleTimeout(onTimeout(),message))
+                         .then();
+             }
+             return flux.then();
+         });
+    }
+
+    //TODO !!unsafe cast!! This is only temporary fix as I cannot figure out correct generic to use in this situation
+    private static <T> Publisher<T> handleTimeout(Function<Message, Publisher<?>> timeoutHandler, Message message) {
+        return (Publisher<T>) timeoutHandler.apply(message);
     }
 }
