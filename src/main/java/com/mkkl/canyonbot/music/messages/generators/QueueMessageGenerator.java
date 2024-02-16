@@ -43,7 +43,7 @@ public interface QueueMessageGenerator extends ResponseMessage {
                 .pageConstructor(pageData -> {
                     long i = 0;
                     long startElement = pageData.getPerPage() * (pageData.getPage() - 1);
-                    long endElement = elementsPerPage() * (pageData.getPage());
+                    long endElement = pageData.getPerPage() * (pageData.getPage());
                     StringBuilder stringBuilder = new StringBuilder();
 
                     if (currentTrack().isPresent())
@@ -54,7 +54,7 @@ public interface QueueMessageGenerator extends ResponseMessage {
                                 .append("\n");
 
                     stringBuilder.append("Page ")
-                            .append(page())
+                            .append(pageData.getPage())
                             .append("/")
                             .append(pageData.getSize())
                             .append("\n");

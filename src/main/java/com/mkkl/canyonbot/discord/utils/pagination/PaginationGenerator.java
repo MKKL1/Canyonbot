@@ -5,6 +5,7 @@ import com.mkkl.canyonbot.discord.interaction.ImmutableCustomButton;
 import com.mkkl.canyonbot.discord.interaction.InteractableComponent;
 import com.mkkl.canyonbot.discord.response.Response;
 import com.mkkl.canyonbot.discord.response.ResponseInteraction;
+import com.mkkl.canyonbot.discord.utils.TimeoutUtils;
 import com.mkkl.canyonbot.music.messages.generators.QueueMessage;
 import com.mkkl.canyonbot.music.messages.generators.ResponseMessageData;
 import com.mkkl.canyonbot.music.messages.generators.ShortPlaylistMessage;
@@ -59,15 +60,11 @@ public interface PaginationGenerator<T extends EmbedCreateSpec> {
         builder.addEmbed(pageConstructor().apply(new PageData(currentPage(), pages(), sizePerPage())));
         CustomButton nextButton = ImmutableCustomButton.builder()
                 .label(">")
-                .interaction(event -> event.getMessage().orElseThrow()
-                        .edit()
-                        .withEmbeds(paginationController.next())
+                .interaction(event -> event.deferReply().then(event.getInteractionResponse().deleteInitialResponse()).then(event.getMessage().orElseThrow().edit().withEmbeds(paginationController.next()))
                 ).build();
         CustomButton prevButton = ImmutableCustomButton.builder()
                 .label("<")
-                .interaction(event -> event.getMessage().orElseThrow()
-                    .edit()
-                    .withEmbeds(paginationController.prev())
+                .interaction(event -> event.deferReply().then(event.getInteractionResponse().deleteInitialResponse()).then(event.getMessage().orElseThrow().edit().withEmbeds(paginationController.prev()))
                 ).build();
         builder.addComponent(ActionRow.of(prevButton.asMessageComponent(), nextButton.asMessageComponent()));
         builder.interaction(ResponseInteraction.builder()
@@ -75,6 +72,7 @@ public interface PaginationGenerator<T extends EmbedCreateSpec> {
                 .addInteractableComponent(prevButton)
                 .gateway(gateway)
                 .timeout(Duration.ofSeconds(60))
+                .onTimeout(TimeoutUtils::clearActionBar)
                 .build());
         return builder.build();
     }

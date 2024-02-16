@@ -30,6 +30,7 @@ public interface ResponseInteractionGenerator {
         return message -> Mono.empty();
     }
 
+    //TODO track current responses with interactions
     //Sometimes it's better to not pass message TODO remove message argument?
     default Mono<Void> interaction(Message message) {
          return gateway().flatMap(gateway -> {
