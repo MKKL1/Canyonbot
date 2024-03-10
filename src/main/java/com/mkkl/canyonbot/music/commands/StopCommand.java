@@ -6,13 +6,9 @@ import com.mkkl.canyonbot.commands.RegisterCommand;
 import com.mkkl.canyonbot.commands.exceptions.UserResponseMessage;
 import com.mkkl.canyonbot.music.exceptions.GuildMusicBotNotCreated;
 import com.mkkl.canyonbot.music.player.TrackScheduler;
-import com.mkkl.canyonbot.music.services.GuildTrackSchedulerService;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
-
-import java.util.Objects;
 
 @RegisterCommand
 public class StopCommand extends BotCommand {

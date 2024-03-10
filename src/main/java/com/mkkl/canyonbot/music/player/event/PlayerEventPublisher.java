@@ -5,6 +5,9 @@ import org.springframework.context.ApplicationEvent;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 
+//Event manager used for publishing events to all services
+//For example when music bot is created to serve some guild, all additional services acknowledge this fact
+//TODO unify names of events handlers to better represent what they do
 @Component
 public class PlayerEventPublisher {
     private final ApplicationEventPublisher publisher;

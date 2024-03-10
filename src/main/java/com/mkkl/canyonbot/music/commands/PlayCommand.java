@@ -4,8 +4,7 @@ import com.mkkl.canyonbot.commands.BotCommand;
 import com.mkkl.canyonbot.commands.DefaultErrorHandler;
 import com.mkkl.canyonbot.commands.RegisterCommand;
 import com.mkkl.canyonbot.music.exceptions.*;
-import com.mkkl.canyonbot.music.search.SearchService;
-import com.mkkl.canyonbot.music.search.SearchResult;
+import com.mkkl.canyonbot.music.services.search.SearchService;
 import com.mkkl.canyonbot.music.search.SourceRegistry;
 import com.mkkl.canyonbot.music.search.internal.sources.SearchSource;
 import com.mkkl.canyonbot.music.services.*;
@@ -148,7 +147,7 @@ public class PlayCommand extends BotCommand {
         for (SearchSource source : sources) {
             choices.add(ImmutableApplicationCommandOptionChoiceData.builder()
                     .name(source.name())
-                    .value(source.identifier())
+                    .value(source.searchIdentifier())
                     .build());
         }
         return choices;

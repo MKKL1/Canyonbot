@@ -1,7 +1,5 @@
 package com.mkkl.canyonbot.music.services;
 
-import com.mkkl.canyonbot.music.player.event.GuildPlayerCreationEvent;
-import com.mkkl.canyonbot.music.player.queue.SimpleTrackQueue;
 import com.mkkl.canyonbot.music.player.queue.TrackQueue;
 import com.mkkl.canyonbot.music.player.queue.TrackQueueElement;
 import discord4j.core.object.entity.Guild;
@@ -21,8 +19,8 @@ public class GuildTrackQueueService {
     private final Map<Guild, TrackQueue> guildTrackQueueMap = new ConcurrentHashMap<>();
     @EventListener
     private void handleGuildPlayerCreation(GuildPlayerCreationEvent event) {
-        Guild guild = event.getGuildMusicBot().getGuild();
-        guildTrackQueueMap.put(guild, event.getGuildMusicBot().getTrackQueue());
+        Guild guild = event.getLinkContext().getGuild();
+        guildTrackQueueMap.put(guild, event.getLinkContext().getTrackQueue());
         log.debug("Created TrackQueue for guild " + guild);
     }
 

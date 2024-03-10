@@ -1,9 +1,7 @@
 package com.mkkl.canyonbot.music.player.event.scheduler;
 
-import com.mkkl.canyonbot.music.player.GuildMusicBot;
 import com.mkkl.canyonbot.music.player.event.MusicPlayerEvent;
 import com.mkkl.canyonbot.music.player.queue.TrackQueue;
-import com.mkkl.canyonbot.music.player.queue.TrackQueueElement;
 import discord4j.core.object.entity.Guild;
 import lombok.Getter;
 

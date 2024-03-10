@@ -6,7 +6,6 @@ import com.mkkl.canyonbot.commands.RegisterCommand;
 import com.mkkl.canyonbot.discord.response.Response;
 import com.mkkl.canyonbot.music.messages.generators.QueueMessage;
 import com.mkkl.canyonbot.music.services.GuildTrackQueueService;
-import com.mkkl.canyonbot.music.services.GuildTrackSchedulerService;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
