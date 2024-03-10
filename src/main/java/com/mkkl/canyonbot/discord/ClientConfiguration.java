@@ -50,6 +50,7 @@ public class ClientConfiguration {
                     .setPassword("youshallnotpass")
                     .setHttpTimeout(5000L)
                     .build());
+            //TODO pass events to event dispatcher
             return client;
         }
     }

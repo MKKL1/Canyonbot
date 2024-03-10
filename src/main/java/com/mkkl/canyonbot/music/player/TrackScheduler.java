@@ -1,6 +1,5 @@
 package com.mkkl.canyonbot.music.player;
 
-import com.mkkl.canyonbot.music.player.event.base.TrackEndEvent;
 import com.mkkl.canyonbot.music.player.event.scheduler.QueueEmptyEvent;
 import com.mkkl.canyonbot.music.player.queue.TrackQueue;
 import com.mkkl.canyonbot.music.player.queue.TrackQueueElement;
@@ -11,9 +10,6 @@ import jakarta.annotation.Nullable;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
-
-import java.util.Objects;
-import java.util.Optional;
 
 @Slf4j
 @Getter
