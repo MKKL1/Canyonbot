@@ -1,5 +1,7 @@
 package com.mkkl.canyonbot.music.player;
 
+import com.mkkl.canyonbot.event.EventDispatcher;
+import com.mkkl.canyonbot.music.player.event.lavalink.player.PlayerTrackEndEvent;
 import com.mkkl.canyonbot.music.player.event.scheduler.QueueEmptyEvent;
 import com.mkkl.canyonbot.music.player.queue.TrackQueue;
 import com.mkkl.canyonbot.music.player.queue.TrackQueueElement;
@@ -9,30 +11,35 @@ import discord4j.core.object.entity.Guild;
 import jakarta.annotation.Nullable;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Configurable;
 import reactor.core.publisher.Mono;
 
 @Slf4j
 @Getter
+@Configurable
 public class TrackScheduler {
     @Nullable
     private TrackQueueElement currentTrack = null;
     private State state = State.STOPPED;
     private final TrackQueue trackQueue;
     private final Link link;
-
-    public TrackScheduler(MusicBotEventDispatcher musicBotEventDispatcher, TrackQueue trackQueue, Link link, Guild guild) {
+    //It is only needed in constructor so should I just pass it as a parameter?
+    @Autowired
+    private EventDispatcher eventDispatcher;
+    public TrackScheduler(TrackQueue trackQueue, Link link, Guild guild) {
         this.link = link;
         this.trackQueue = trackQueue;
-        musicBotEventDispatcher.on(TrackEndEvent.class)
-                .filter(trackEndEvent -> trackEndEvent.getEndReason().mayStartNext)
+        eventDispatcher.on(PlayerTrackEndEvent.class)
+                .filter(trackEndEvent -> trackEndEvent.getReason().getMayStartNext())
                 .flatMap(trackEndEvent ->
                         //May play next
                         playNext().switchIfEmpty(Mono.defer(() -> {
-                                //Queue empty
-                                musicBotEventDispatcher.publish(new QueueEmptyEvent(guild, trackQueue));
-                                state = State.STOPPED;
-                                return Mono.empty();
-                            })))
+                            //Queue empty
+                            eventDispatcher.publish(new QueueEmptyEvent(guild, trackQueue));
+                            state = State.STOPPED;
+                            return Mono.empty();
+                        })))
                 .switchIfEmpty(Mono.defer(() -> {
                     //Cannot play next
                     state = State.STOPPED;
@@ -69,7 +76,7 @@ public class TrackScheduler {
     private Mono<LavalinkPlayer> playNext() {
         return Mono.fromCallable(trackQueue::dequeue)
                 .doOnNext(trackQueueElement -> currentTrack = trackQueueElement)
-                .flatMap(trackQueueElement -> link.getPlayer().flatMap(player -> player.setTrack(trackQueueElement.getTrack())))
+                .flatMap(trackQueueElement -> link.getPlayer().flatMap(player -> player.setTrack(trackQueueElement.getTrack())));
     }
 
 

@@ -1,5 +1,8 @@
 package com.mkkl.canyonbot.discord;
 
+import com.mkkl.canyonbot.event.EventDispatcher;
+import com.mkkl.canyonbot.music.player.event.lavalink.LavalinkEventAdapter;
+import dev.arbjerg.lavalink.client.ClientEvent;
 import dev.arbjerg.lavalink.client.Helpers;
 import dev.arbjerg.lavalink.client.LavalinkClient;
 import dev.arbjerg.lavalink.client.NodeOptions;
@@ -9,6 +12,7 @@ import discord4j.core.DiscordClientBuilder;
 import discord4j.core.GatewayDiscordClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import reactor.core.publisher.Mono;
@@ -20,6 +24,8 @@ import java.util.regex.Pattern;
 public class ClientConfiguration {
 
     static Logger logger = LoggerFactory.getLogger(ClientConfiguration.class);
+    @Autowired
+    private EventDispatcher eventDispatcher;
     private final String token;
 
     public ClientConfiguration() {
@@ -50,7 +56,7 @@ public class ClientConfiguration {
                     .setPassword("youshallnotpass")
                     .setHttpTimeout(5000L)
                     .build());
-            //TODO pass events to event dispatcher
+            client.on(ClientEvent.class).subscribe(event -> eventDispatcher.publish(LavalinkEventAdapter.get(event)));
             return client;
         }
     }

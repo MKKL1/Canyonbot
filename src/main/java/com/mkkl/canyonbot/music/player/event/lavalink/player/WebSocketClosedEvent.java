@@ -7,14 +7,14 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public class WebSockedClosedEvent implements PlayerEvent {
+public class WebSocketClosedEvent implements PlayerEvent {
     private final LavalinkNode node;
     private final long guildId;
     private final int code;
     private final String reason;
     private final boolean byRemote;
 
-    public WebSockedClosedEvent(dev.arbjerg.lavalink.client.WebSocketClosedEvent webSocketClosedEvent) {
+    public WebSocketClosedEvent(dev.arbjerg.lavalink.client.WebSocketClosedEvent webSocketClosedEvent) {
         this(webSocketClosedEvent.getNode(), webSocketClosedEvent.getGuildId(), webSocketClosedEvent.getCode(), webSocketClosedEvent.getReason(), webSocketClosedEvent.getByRemote());
     }
 }

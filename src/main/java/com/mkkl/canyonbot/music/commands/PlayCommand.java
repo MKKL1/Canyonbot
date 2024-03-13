@@ -10,6 +10,7 @@ import com.mkkl.canyonbot.music.search.internal.sources.SearchSource;
 import com.mkkl.canyonbot.music.services.*;
 import com.mkkl.canyonbot.music.services.search.PlaylistResultHandler;
 import com.mkkl.canyonbot.music.services.search.TrackResultHandler;
+import dev.arbjerg.lavalink.client.protocol.*;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
@@ -122,23 +123,21 @@ public class PlayCommand extends BotCommand {
                 .switchIfEmpty(Mono.error(new QueryNotFoundException(context.event.getInteraction())))
                 .zipWhen(query -> {
                     if (context.sourceId.isEmpty())
-                        return searchService.search(query);
+                        return searchService.search(context.guild, query);
 
                     Optional<SearchSource> searchSource = sourceRegistry.getSource(context.sourceId.get());
                     if(searchSource.isEmpty())
                         return Mono.error(new SourceNotFoundException(context.sourceId.get()));
-                    return searchService.search(query, searchSource.get());
+                    return searchService.search(context.guild, query, searchSource.get());
                 })
                 .flatMap(tuple -> {
-                    SearchResult searchResult = tuple.getT2();
-                    if (searchResult.getPlaylists() != null && !searchResult.getPlaylists().isEmpty()) {
-                        //SearchResult is a playlist
-                        return playlistResultHandler.handle(context, searchResult);
-                    } else if (searchResult.getTracks() != null && !searchResult.getTracks().isEmpty()) {
-                        //SearchResult is a track
-                        return trackResultHandler.handle(context, searchResult);
-                    }
-                    return Mono.error(new NoMatchException(tuple.getT1()));
+                    LavalinkLoadResult searchResult = tuple.getT2();
+                    return switch (searchResult) {
+                        case LoadFailed loadFailed -> Mono.error(new LoadFailedException(tuple.getT1(), loadFailed.getException()));
+                        case PlaylistLoaded playlistLoaded -> playlistResultHandler.handle(context, playlistLoaded);
+                        case TrackLoaded trackLoaded -> trackResultHandler.handle(context, trackLoaded);
+                        default -> Mono.error(new NoMatchException(tuple.getT1()));
+                    };
                 });
     }
 
