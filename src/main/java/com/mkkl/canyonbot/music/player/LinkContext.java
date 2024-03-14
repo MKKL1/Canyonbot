@@ -19,11 +19,11 @@ public class LinkContext {
     private final TrackQueue trackQueue;
     private final TrackScheduler trackScheduler;
 
-    public LinkContext(Guild guild, Link link) {
+    public LinkContext(Guild guild, Link link, EventDispatcher eventDispatcher) {
         this.guild = guild;
         this.link = link;
         this.trackQueue = new SimpleTrackQueue();
-        this.trackScheduler = new TrackScheduler(trackQueue, link, guild);
+        this.trackScheduler = new TrackScheduler(trackQueue, link, guild, eventDispatcher);
     }
 
     //TODO when this method is called, it is not removed from registry

@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 @Service
-public class PlaylistResultHandler implements SearchResultHandler<PlaylistLoaded> {
+public class PlaylistResultHandler implements LavalinkLoadResultHandler<PlaylistLoaded> {
     @Autowired
     private PlayTrackService playTrackService;
     @Autowired

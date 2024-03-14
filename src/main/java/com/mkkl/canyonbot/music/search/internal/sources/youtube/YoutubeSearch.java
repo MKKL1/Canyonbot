@@ -2,7 +2,9 @@ package com.mkkl.canyonbot.music.search.internal.sources.youtube;
 
 import com.mkkl.canyonbot.music.search.internal.sources.SearchSource;
 import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeAudioSourceManager;
+import org.springframework.stereotype.Component;
 
+@Component
 public class YoutubeSearch implements SearchSource {
     @Override
     public String name() {

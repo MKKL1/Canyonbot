@@ -6,7 +6,9 @@ import com.sedmelluq.discord.lavaplayer.track.AudioItem;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioReference;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
+import org.springframework.stereotype.Component;
 
+@Component
 public class YoutubeLinkSearch implements SearchSource {
     @Override
     public String name() {

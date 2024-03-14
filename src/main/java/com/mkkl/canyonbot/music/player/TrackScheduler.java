@@ -17,7 +17,6 @@ import reactor.core.publisher.Mono;
 
 @Slf4j
 @Getter
-@Configurable
 public class TrackScheduler {
     @Nullable
     private TrackQueueElement currentTrack = null;
@@ -25,9 +24,7 @@ public class TrackScheduler {
     private final TrackQueue trackQueue;
     private final Link link;
     //It is only needed in constructor so should I just pass it as a parameter?
-    @Autowired
-    private EventDispatcher eventDispatcher;
-    public TrackScheduler(TrackQueue trackQueue, Link link, Guild guild) {
+    public TrackScheduler(TrackQueue trackQueue, Link link, Guild guild, EventDispatcher eventDispatcher) {
         this.link = link;
         this.trackQueue = trackQueue;
         eventDispatcher.on(PlayerTrackEndEvent.class)

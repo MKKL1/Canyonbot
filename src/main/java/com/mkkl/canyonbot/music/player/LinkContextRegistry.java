@@ -27,7 +27,9 @@ public class LinkContextRegistry {
         //TODO move this to a factory
         //TODO handle no lavalink nodes available
         if(lavalinkClient.getNodes().isEmpty()) throw new RuntimeException("No lavalink nodes!");
-        LinkContext linkContext = linkContextMap.computeIfAbsent(guild, g -> new LinkContext(g, lavalinkClient.getOrCreateLink(g.getId().asLong())));
+        LinkContext linkContext = linkContextMap.computeIfAbsent(guild,
+                g -> new LinkContext(g, lavalinkClient.getOrCreateLink(g.getId().asLong()), eventDispatcher)
+        );
         eventDispatcher.publish(new LinkContextCreationEvent(guild.getId().asLong()));
         return linkContext;
     }
