@@ -25,6 +25,8 @@ public class LinkContextRegistry {
 
     public LinkContext getOrCreate(Guild guild) {
         //TODO move this to a factory
+        //TODO handle no lavalink nodes available
+        if(lavalinkClient.getNodes().isEmpty()) throw new RuntimeException("No lavalink nodes!");
         LinkContext linkContext = linkContextMap.computeIfAbsent(guild, g -> new LinkContext(g, lavalinkClient.getOrCreateLink(g.getId().asLong())));
         eventDispatcher.publish(new LinkContextCreationEvent(guild.getId().asLong()));
         return linkContext;
@@ -34,6 +36,9 @@ public class LinkContextRegistry {
         return Optional.ofNullable(linkContextMap.get(guild));
     }
 
+    public boolean isCached(Guild guild) {
+        return linkContextMap.containsKey(guild);
+    }
     public Mono<Void> destroy(Guild guild) {
         return Optional.ofNullable(linkContextMap.remove(guild))
                 .map(LinkContext::destroy)

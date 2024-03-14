@@ -33,13 +33,11 @@ import java.util.*;
 public class PlayCommand extends BotCommand {
     private final SearchService searchService;
     private final SourceRegistry sourceRegistry;
-    private final GuildMusicBotService guildMusicBotService;
     private final PlaylistResultHandler playlistResultHandler;
     private final TrackResultHandler trackResultHandler;
 
     public PlayCommand(SearchService searchService,
                        SourceRegistry sourceRegistry,
-                       GuildMusicBotService guildMusicBotService,
                        DefaultErrorHandler errorHandler,
                        PlaylistResultHandler playlistResultHandler,
                        TrackResultHandler trackResultHandler) {
@@ -82,7 +80,6 @@ public class PlayCommand extends BotCommand {
                 .build(), errorHandler);
         this.sourceRegistry = sourceRegistry;
         this.searchService = searchService;
-        this.guildMusicBotService = guildMusicBotService;
         this.playlistResultHandler = playlistResultHandler;
         this.trackResultHandler = trackResultHandler;
     }
@@ -112,7 +109,7 @@ public class PlayCommand extends BotCommand {
 
 
         return event.deferReply()
-                .then(event.getInteraction().getGuild().doOnNext(guildMusicBotService::createGuildMusicBot))
+                .then(event.getInteraction().getGuild())
                 .flatMap(guild -> handleQuery(new Context(event, query, sourceId, channel, guild)))
                 .then();
     }

@@ -19,6 +19,6 @@ public class LavaLinkService {
 
     public Mono<Void> playTrack(Guild guild, Track track) {
         LinkContext linkContext = linkContextRegistry.getOrCreate(guild);
-        linkContext.getLink().getPlayer().flatMap(player -> player.setTrack(track));
+        return linkContext.getLink().getPlayer().flatMap(player -> player.setTrack(track)).then();
     }
 }

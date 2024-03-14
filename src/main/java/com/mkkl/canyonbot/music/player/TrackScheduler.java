@@ -36,7 +36,7 @@ public class TrackScheduler {
                         //May play next
                         playNext().switchIfEmpty(Mono.defer(() -> {
                             //Queue empty
-                            eventDispatcher.publish(new QueueEmptyEvent(guild, trackQueue));
+                            eventDispatcher.publish(new QueueEmptyEvent(guild.getId().asLong(), trackQueue));
                             state = State.STOPPED;
                             return Mono.empty();
                         })))

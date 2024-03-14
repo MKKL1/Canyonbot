@@ -26,6 +26,6 @@ public class TrackResultHandler implements SearchResultHandler<TrackLoaded> {
                                 .user(context.getEvent().getInteraction().getUser())
                                 .build()
                                 .getMessage().embeds())
-                        .build()));;
+                        .build()));
     }
 }

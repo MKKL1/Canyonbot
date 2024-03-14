@@ -4,6 +4,8 @@ import com.mkkl.canyonbot.discord.response.Response;
 import com.mkkl.canyonbot.discord.utils.TimeoutUtils;
 import com.mkkl.canyonbot.music.commands.PlayCommand;
 import com.mkkl.canyonbot.music.messages.generators.ShortPlaylistMessage;
+import com.mkkl.canyonbot.music.player.LinkContext;
+import com.mkkl.canyonbot.music.player.LinkContextRegistry;
 import com.mkkl.canyonbot.music.player.queue.TrackQueueElement;
 import com.mkkl.canyonbot.music.services.PlayTrackService;
 import dev.arbjerg.lavalink.client.protocol.PlaylistLoaded;
@@ -15,14 +17,15 @@ import reactor.core.publisher.Mono;
 @Service
 public class PlaylistResultHandler implements SearchResultHandler<PlaylistLoaded> {
     @Autowired
-    private GuildTrackQueueService guildTrackQueueService;
-    @Autowired
     private PlayTrackService playTrackService;
     @Autowired
     private Mono<GatewayDiscordClient> gateway;
+    @Autowired
+    private LinkContextRegistry linkContextRegistry;
 
     @Override
     public Mono<?> handle(PlayCommand.Context context, PlaylistLoaded playlistLoaded) {
+        LinkContext linkContext = linkContextRegistry.getOrCreate(context.getGuild());
         Response shortPlaylistMessage = ShortPlaylistMessage.builder()
                 .query(context.getQuery())
                 .playlist(playlistLoaded)
@@ -31,8 +34,7 @@ public class PlaylistResultHandler implements SearchResultHandler<PlaylistLoaded
                 .onPlay(event ->
                         event.reply("Playing " + playlistLoaded.getTracks().size() + " tracks")
                                 .and(Mono.fromRunnable(() ->
-                                        guildTrackQueueService.addAll(
-                                                context.getGuild(),
+                                        linkContext.getTrackQueue().addAll(
                                                 TrackQueueElement.listOf(
                                                         playlistLoaded.getTracks(),
                                                         context.getEvent().getInteraction().getUser()

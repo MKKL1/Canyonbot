@@ -49,8 +49,8 @@ public interface QueueMessageGenerator extends ResponseMessage {
                     if (currentTrack().isPresent())
                         stringBuilder.append("Current: ")
                                 .append(currentTrack().get()
-                                        .getAudioTrack()
-                                        .getInfo().title)
+                                        .getTrack()
+                                        .getInfo().getTitle())
                                 .append("\n");
 
                     stringBuilder.append("Page ")
@@ -70,8 +70,8 @@ public interface QueueMessageGenerator extends ResponseMessage {
 
                         stringBuilder.append(i + 1)
                                 .append(". ")
-                                .append(trackQueueElement.getAudioTrack()
-                                        .getInfo().title)
+                                .append(trackQueueElement.getTrack()
+                                        .getInfo().getTitle())
                                 .append("\n");
 
                     }

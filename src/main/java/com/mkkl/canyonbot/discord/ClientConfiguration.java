@@ -7,6 +7,8 @@ import dev.arbjerg.lavalink.client.Helpers;
 import dev.arbjerg.lavalink.client.LavalinkClient;
 import dev.arbjerg.lavalink.client.NodeOptions;
 import dev.arbjerg.lavalink.client.loadbalancing.builtin.VoiceRegionPenaltyProvider;
+import dev.arbjerg.lavalink.libraries.discord4j.D4JVoiceHandler;
+import dev.arbjerg.lavalink.libraries.discord4j.Discord4JUtils;
 import discord4j.core.DiscordClient;
 import discord4j.core.DiscordClientBuilder;
 import discord4j.core.GatewayDiscordClient;
@@ -49,16 +51,21 @@ public class ClientConfiguration {
     //TODO this needs to be in lavalink configuration
     @Bean
     public LavalinkClient lavalinkClient() {
-        try (LavalinkClient client = new LavalinkClient(Helpers.getUserIdFromToken(token))) {
-            client.getLoadBalancer().addPenaltyProvider(new VoiceRegionPenaltyProvider());
-            client.addNode(new NodeOptions.Builder().setName("Mac-mini")
-                    .setServerUri(URI.create("http://localhost:2333"))
-                    .setPassword("youshallnotpass")
-                    .setHttpTimeout(5000L)
-                    .build());
-            client.on(ClientEvent.class).subscribe(event -> eventDispatcher.publish(LavalinkEventAdapter.get(event)));
-            return client;
-        }
+        LavalinkClient client = new LavalinkClient(Helpers.getUserIdFromToken(token));
+        discordClient().withGateway(gateway -> {
+            D4JVoiceHandler.install(gateway, client);
+            return Mono.empty();
+        }).subscribe();
+
+        client.getLoadBalancer().addPenaltyProvider(new VoiceRegionPenaltyProvider());
+        client.addNode(new NodeOptions.Builder().setName("Lavalink server 1")
+                .setServerUri(URI.create("ws://localhost:2333"))
+                .setPassword("youshallnotpass")
+                .setHttpTimeout(5000L)
+                .build());
+        client.on(ClientEvent.class).subscribe(event -> eventDispatcher.publish(LavalinkEventAdapter.get(event)));
+        return client;
+
     }
 
     @Bean

@@ -4,6 +4,7 @@ import com.mkkl.canyonbot.discord.GuildVoiceConnectionService;
 import com.mkkl.canyonbot.music.exceptions.ChannelNotFoundException;
 import com.mkkl.canyonbot.music.exceptions.InvalidAudioChannelException;
 import com.mkkl.canyonbot.music.exceptions.MemberNotFoundException;
+import com.mkkl.canyonbot.music.player.LinkContextRegistry;
 import com.mkkl.canyonbot.music.player.TrackScheduler;
 import com.mkkl.canyonbot.music.player.queue.TrackQueueElement;
 import dev.arbjerg.lavalink.client.protocol.Track;
@@ -20,18 +21,16 @@ import reactor.core.publisher.Mono;
 @Service
 public class PlayTrackService {
     @Autowired
-    private GuildMusicBotService guildMusicBotService;
-    @Autowired
     private GuildVoiceConnectionService guildVoiceConnectionService;
     @Autowired
-    private GuildTrackSchedulerService guildTrackSchedulerService;
+    private LinkContextRegistry linkContextRegistry;
 
     public Mono<Void> playTrack(Guild guild, Mono<Channel> channelMono, Interaction interaction, Track track) {
-        return Mono.just(guildMusicBotService.getGuildMusicBot(guild)
-                        .orElse(guildMusicBotService.createGuildMusicBot(guild)))
-                .flatMap(guildMusicBot -> {
-                    Mono<Void> enqueueMono = Mono.fromRunnable(() -> guildMusicBot.getTrackQueue()
-                            .add(new TrackQueueElement(track, interaction.getUser())));
+        return Mono.fromCallable(() -> linkContextRegistry.getOrCreate(guild))
+                .flatMap(linkContext -> {
+                    Mono<Void> enqueueMono = Mono.fromRunnable(() ->
+                            linkContext.getTrackQueue().add(new TrackQueueElement(track, interaction.getUser()))
+                    );
 
                     Mono<Void> joinMono = guildVoiceConnectionService.isConnected(guild)
                             .filter(isConnected -> !isConnected)
@@ -48,14 +47,14 @@ public class PlayTrackService {
                                             return Mono.error(new InvalidAudioChannelException(interaction));
                                         return Mono.just((AudioChannel) channel);
                                     })
-                                    .flatMap(audioChannel -> guildVoiceConnectionService.join(guild, guildMusicBot.getPlayer()
-                                            .getAudioProvider(), audioChannel)))
+                                    .flatMap(audioChannel -> guildVoiceConnectionService.join(guild, audioChannel)))
                             .then();
 
 
-                    Mono<Void> startMono = Mono.fromRunnable(() -> {
-                        if (guildTrackSchedulerService.getState(guild) == TrackScheduler.State.STOPPED)
-                            guildTrackSchedulerService.startPlaying(guild);
+                    Mono<Void> startMono = Mono.defer(() -> {
+                        if (linkContext.getTrackScheduler().getState() != TrackScheduler.State.PLAYING)
+                            return linkContext.getTrackScheduler().beginPlayback();
+                        return Mono.empty();
                     });
                     return enqueueMono.and(joinMono).then(startMono);
                 });

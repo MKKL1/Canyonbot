@@ -18,6 +18,7 @@ public class GuildVoiceConnectionService {
     private final Map<Guild, VoiceConnection> voiceConnections = new ConcurrentHashMap<>();
 
     //TODO check changing channels
+    //TODO remove repeating
     public Mono<VoiceConnection> join(Guild guild, AudioProvider audioProvider, AudioChannel audioChannel) {
         return isConnected(guild)
                 .filter(isConnected -> isConnected)
@@ -25,6 +26,14 @@ public class GuildVoiceConnectionService {
                                 .provider(audioProvider)
                                 .build())
                         .doOnNext(voiceConnection -> voiceConnections.put(guild, voiceConnection)));
+    }
+
+    public Mono<VoiceConnection> join(Guild guild, AudioChannel audioChannel) {
+        return isConnected(guild)
+                .filter(isConnected -> isConnected)
+                .then(audioChannel.join(AudioChannelJoinSpec.builder().build())
+                        .doOnNext(voiceConnection -> voiceConnections.put(guild, voiceConnection))
+                );
     }
 
     public Mono<Void> leave(Guild guild) {
