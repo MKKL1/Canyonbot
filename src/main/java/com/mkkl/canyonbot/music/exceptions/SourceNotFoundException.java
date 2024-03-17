@@ -1,10 +1,8 @@
 package com.mkkl.canyonbot.music.exceptions;
 
-import com.mkkl.canyonbot.commands.exceptions.ExceptionFormatUtils;
-import com.mkkl.canyonbot.commands.exceptions.UserResponseMessage;
-import discord4j.core.object.command.Interaction;
+import com.mkkl.canyonbot.commands.exceptions.BotExternalException;
 
-public class SourceNotFoundException extends UserResponseMessage {
+public class SourceNotFoundException extends BotExternalException {
     public SourceNotFoundException(String sourceId) {
         super("Source by id \"" + sourceId + "\" not found");
     }

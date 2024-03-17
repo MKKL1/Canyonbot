@@ -37,7 +37,7 @@ public interface ShortPlaylistMessageGenerator extends ResponseMessage {
     Optional<SearchSource> source();
     Optional<String> query();
     User user();
-    Mono<GatewayDiscordClient> gateway();
+    GatewayDiscordClient gateway();
     Function<ButtonInteractionEvent, Publisher<?>> onPlay();
 
     @Override

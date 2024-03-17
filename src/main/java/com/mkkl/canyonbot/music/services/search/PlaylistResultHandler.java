@@ -19,7 +19,7 @@ public class PlaylistResultHandler implements LavalinkLoadResultHandler<Playlist
     @Autowired
     private PlayTrackService playTrackService;
     @Autowired
-    private Mono<GatewayDiscordClient> gateway;
+    private GatewayDiscordClient gateway;
     @Autowired
     private LinkContextRegistry linkContextRegistry;
 

@@ -13,6 +13,8 @@ import dev.arbjerg.lavalink.libraries.discord4j.Discord4JUtils;
 import discord4j.core.DiscordClient;
 import discord4j.core.DiscordClientBuilder;
 import discord4j.core.GatewayDiscordClient;
+import discord4j.core.object.presence.ClientPresence;
+import discord4j.gateway.intent.IntentSet;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
@@ -30,7 +32,6 @@ import java.util.regex.Pattern;
 public class ClientConfiguration {
     @Autowired
     private EventDispatcher eventDispatcher;
-    @Getter
     private final String token;
 
     public ClientConfiguration() {
@@ -47,23 +48,24 @@ public class ClientConfiguration {
     }
 
     @Bean
-    public DiscordClient discordClient() {
-        return DiscordClientBuilder.create(token).build();
+    public GatewayDiscordClient gateway() {
+        return DiscordClientBuilder
+                .create(token)
+                .build()
+                .gateway()
+                .setEnabledIntents(IntentSet.nonPrivileged())
+                .login()
+                .block();
     }
 
-    //TODO this needs to be in lavalink configuration
+    //TODO move
     @Bean
     public LavalinkClient lavalinkClient() {
         LavalinkClient client = new LavalinkClient(Helpers.getUserIdFromToken(token));
-//        discordClient().withGateway(gateway -> {
-//            //D4JVoiceHandler.install(gateway, client);
-//            //return Mono.empty();
-//            return VoiceUpdateHandler.install(gateway, client);
-//        }).subscribe();
-//
-//        discordClient().withGateway(gatewayDiscordClient -> {
-//            return gatewayDiscordClient.on(Message)
-//        });
+        VoiceUpdateHandler.install(gateway(), client)
+                .doOnError(VoiceUpdateHandler.VoiceUpdateHandlerException.class,
+                        throwable -> log.error("guild:" + throwable.getGuildId() + " " + throwable.getMessage()))
+                .subscribe();
 
         client.getLoadBalancer().addPenaltyProvider(new VoiceRegionPenaltyProvider());
         client.addNode(new NodeOptions.Builder().setName("Lavalink server 1")
@@ -74,10 +76,5 @@ public class ClientConfiguration {
         client.on(ClientEvent.class).subscribe(event -> eventDispatcher.publish(LavalinkEventAdapter.get(event)));
         return client;
 
-    }
-
-    @Bean
-    public Mono<GatewayDiscordClient> gatewayDiscordClient() {
-        return discordClient().login();
     }
 }

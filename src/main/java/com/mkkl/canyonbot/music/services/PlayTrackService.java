@@ -19,6 +19,9 @@ import discord4j.core.object.entity.PartialMember;
 import discord4j.core.object.entity.channel.AudioChannel;
 import discord4j.core.object.entity.channel.Channel;
 import discord4j.core.spec.AudioChannelJoinSpec;
+import discord4j.discordjson.json.gateway.VoiceStateUpdate;
+import discord4j.gateway.GatewayClientGroup;
+import discord4j.gateway.json.ShardGatewayPayload;
 import discord4j.voice.VoiceConnection;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,13 +30,15 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.function.TupleUtils;
 
+import java.time.Duration;
+
 @Slf4j
 @Service
 public class PlayTrackService {
     @Autowired
     private LinkContextRegistry linkContextRegistry;
     @Autowired
-    private Mono<GatewayDiscordClient> gatewayMono;
+    private GatewayDiscordClient gatewayDiscordClient;
 
     public Mono<Void> playTrack(Guild guild, Mono<Channel> channelMono, Interaction interaction, Track track) {
         return Mono.fromCallable(() -> linkContextRegistry.getOrCreate(guild))
@@ -41,6 +46,9 @@ public class PlayTrackService {
                     Mono<Void> enqueueMono = Mono.fromRunnable(() ->
                             linkContext.getTrackQueue().add(new TrackQueueElement(track, interaction.getUser()))
                     );
+
+                    Mono<Void> initPlayer = linkContext.getLink().getPlayer()
+                            .then();
 
                     Mono<Void> connect = channelMono
                             //Check for audio channel caller is connected to
@@ -55,12 +63,10 @@ public class PlayTrackService {
                                     return Mono.error(new InvalidAudioChannelException(interaction));
                                 return Mono.just((AudioChannel) channel);
                             })
-                            .flatMap(audioChannel -> join(guild, audioChannel));
+                            .flatMap(audioChannel -> audioChannel.sendConnectVoiceState(false, false));
 
-                    Mono<Void> joinMono = gatewayMono.flatMap(gateway -> gateway.getVoiceConnectionRegistry().getVoiceConnection(guild.getId()))
-                            .doOnNext(vc -> System.out.println("next vc1 " + vc))
+                    Mono<Void> joinMono = gatewayDiscordClient.getVoiceConnectionRegistry().getVoiceConnection(guild.getId())
                             .switchIfEmpty(connect.cast(VoiceConnection.class))//TODO test
-                            .doOnNext(vc -> System.out.println("next vc2 " + vc))
                             .then();
 
 
@@ -69,45 +75,7 @@ public class PlayTrackService {
                             return linkContext.getTrackScheduler().beginPlayback();
                         return Mono.empty();
                     });
-                    return enqueueMono.and(joinMono).then(startMono);
+                    return enqueueMono.and(initPlayer).and(joinMono).then(startMono);
                 });
     }
-
-    static Flux<VoiceStateUpdateEvent> onVoiceStateUpdates(GatewayDiscordClient gateway, Snowflake guildId) {
-        return gateway.getEventDispatcher()
-                .on(VoiceStateUpdateEvent.class)
-                .filter(vsu -> {
-                    final Snowflake vsuUser = vsu.getCurrent().getUserId();
-                    final Snowflake vsuGuild = vsu.getCurrent().getGuildId();
-                    // this update is for the bot (current) user in this guild
-                    return vsuUser.equals(gateway.getSelfId()) && vsuGuild.equals(guildId);
-                });
-    }
-
-    static Mono<VoiceServerUpdateEvent> onVoiceServerUpdate(GatewayDiscordClient gateway, Snowflake guildId) {
-        return gateway.getEventDispatcher()
-                .on(VoiceServerUpdateEvent.class)
-                .filter(vsu -> vsu.getGuildId().equals(guildId) && vsu.getEndpoint() != null)
-                .next();
-    }
-
-    public Mono<Void> join(Guild guild, AudioChannel channel) {
-        return gatewayMono.flatMap(gateway -> {
-            System.out.println("joining?");
-            final Mono<VoiceStateUpdateEvent> waitForVoiceStateUpdate = onVoiceStateUpdates(gateway, guild.getId()).next()
-                    .doOnNext(event -> System.out.println("onVoiceStateUpdates " + event));
-            final Mono<VoiceServerUpdateEvent> waitForVoiceServerUpdate = onVoiceServerUpdate(gateway, guild.getId())
-                    .doOnNext(event -> System.out.println("onVoiceServerUpdate " + event));
-            return channel.sendConnectVoiceState(false, false)
-                    .then(Mono.zip(waitForVoiceStateUpdate, waitForVoiceServerUpdate))
-                    .flatMap(TupleUtils.function((voiceState, voiceServer) -> {
-                        log.info("VoiceServerUpdateEvent " + voiceServer);
-                        return Mono.empty();
-                    }));
-        });
-    }
-//
-//    public Mono<Void> disconnect(Guild guild) {
-//
-//    }
 }

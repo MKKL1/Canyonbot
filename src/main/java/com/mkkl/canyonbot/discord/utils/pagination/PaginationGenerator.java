@@ -54,7 +54,7 @@ public interface PaginationGenerator<T extends EmbedCreateSpec> {
         return 0;
     }
 
-    default Response asResponse(Mono<GatewayDiscordClient> gateway) {
+    default Response asResponse(GatewayDiscordClient gateway) {
         Response.Builder builder = Response.builder();
         PaginationController<T> paginationController = new PaginationController<>(currentPage(), sizePerPage(), pages(), pageConstructor());
         builder.addEmbed(pageConstructor().apply(new PageData(currentPage(), pages(), sizePerPage())));

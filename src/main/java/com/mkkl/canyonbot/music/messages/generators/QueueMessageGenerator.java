@@ -31,7 +31,7 @@ public interface QueueMessageGenerator extends ResponseMessage {
     }
     long maxPages();
     User caller();
-    Mono<GatewayDiscordClient> gateway();
+    GatewayDiscordClient gateway();
 
     @Override
     default Response getMessage() {
