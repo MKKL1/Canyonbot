@@ -23,7 +23,7 @@ public interface ResponseInteractionGenerator {
     default List<InteractableComponent<? extends ComponentInteractionEvent>> interactableComponents() {
         return Collections.emptyList();
     }
-    Mono<GatewayDiscordClient> gateway();
+    GatewayDiscordClient gateway();
     Optional<Duration> timeout();
     @Value.Default
     default Function<Message, Publisher<?>> onTimeout() {
@@ -33,24 +33,22 @@ public interface ResponseInteractionGenerator {
     //TODO track current responses with interactions
     //Sometimes it's better to not pass message TODO remove message argument?
     default Mono<Void> interaction(Message message) {
-         return gateway().flatMap(gateway -> {
-             Flux<?> flux = gateway.on(ComponentInteractionEvent.class, e -> {
-                 System.out.println(e.getCustomId());//debug log
-                 return Flux.fromIterable(interactableComponents())
-                         .filter(component -> e.getCustomId()
-                                 .equals(component.getId()))
-                         .flatMap(component -> ((InteractableComponent<ComponentInteractionEvent>) component).getInteraction()
-                                 .apply(e));
-             });
-
-             if(timeout().isPresent()) {
-                 return flux
-                         .timeout(timeout().get())
-                         .onErrorResume(TimeoutException.class, ignore -> handleTimeout(onTimeout(),message))
-                         .then();
-             }
-             return flux.then();
+         Flux<?> flux = gateway().on(ComponentInteractionEvent.class, e -> {
+             System.out.println(e.getCustomId());//debug log
+             return Flux.fromIterable(interactableComponents())
+                     .filter(component -> e.getCustomId()
+                             .equals(component.getId()))
+                     .flatMap(component -> ((InteractableComponent<ComponentInteractionEvent>) component).getInteraction()
+                             .apply(e));
          });
+
+         if(timeout().isPresent()) {
+             return flux
+                     .timeout(timeout().get())
+                     .onErrorResume(TimeoutException.class, ignore -> handleTimeout(onTimeout(),message))
+                     .then();
+         }
+         return flux.then();
     }
 
     //TODO !!unsafe cast!! This is only temporary fix as I cannot figure out correct generic to use in this situation

@@ -11,6 +11,8 @@ import com.mkkl.canyonbot.music.search.internal.sources.SearchSource;
 import com.mkkl.canyonbot.music.messages.SearchResponseConst;
 import com.sedmelluq.discord.lavaplayer.track.AudioPlaylist;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
+import dev.arbjerg.lavalink.client.protocol.PlaylistLoaded;
+import dev.arbjerg.lavalink.client.protocol.Track;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.object.component.ActionRow;
@@ -31,22 +33,22 @@ import java.util.function.Function;
 @Configurable
 @Value.Immutable
 public interface ShortPlaylistMessageGenerator extends ResponseMessage {
-    AudioPlaylist playlist();
+    PlaylistLoaded playlist();
     Optional<SearchSource> source();
     Optional<String> query();
     User user();
-    Mono<GatewayDiscordClient> gateway();
+    GatewayDiscordClient gateway();
     Function<ButtonInteractionEvent, Publisher<?>> onPlay();
 
     @Override
     default Response getMessage() {
         EmbedCreateSpec.Builder embedBuilder = EmbedCreateSpec.builder();
-        embedBuilder.title(playlist().getName());
+        embedBuilder.title(playlist().getInfo().getName());
         //embedBuilder.url(playlist.getUri()); //TODO add playlist uri
         embedBuilder.color(SearchResponseConst.PLAYLIST_FOUND_COLOR);
         embedBuilder.addField("Duration", ResponseFormatUtils.formatDuration(playlist().getTracks()
                 .stream()
-                .map(AudioTrack::getDuration)
+                .map(x -> x.getInfo().getLength())
                 .reduce(0L, Long::sum)), true);
         embedBuilder.addField("Track count", String.valueOf(playlist().getTracks()
                 .size()), true);
@@ -65,9 +67,8 @@ public interface ShortPlaylistMessageGenerator extends ResponseMessage {
                 .label("Play")
                 .build();
         Response.Builder responseBuilder = Response.builder();
-        AudioTrack selectedTrack = playlist().getSelectedTrack();
-        if (selectedTrack != null)
-            responseBuilder.addEmbed(Objects.requireNonNull(selectedTrackSpec(selectedTrack)));
+        if (playlist().getInfo().getSelectedTrack() != -1)
+            responseBuilder.addEmbed(Objects.requireNonNull(selectedTrackSpec(playlist().getTracks().get(playlist().getInfo().getSelectedTrack()))));
         responseBuilder.addEmbed(embedBuilder.build());
         responseBuilder.addComponent(ActionRow.of(playButton.asMessageComponent()));
         responseBuilder.interaction(ResponseInteraction.builder()
@@ -80,7 +81,7 @@ public interface ShortPlaylistMessageGenerator extends ResponseMessage {
         return responseBuilder.build();
     }
 
-    private EmbedCreateSpec selectedTrackSpec(AudioTrack selectedTrack) {
+    private EmbedCreateSpec selectedTrackSpec(Track selectedTrack) {
         AudioTrackMessage.Builder builder = AudioTrackMessage.builder();
         builder.audioTrack(selectedTrack);
         builder.query(query());

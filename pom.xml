@@ -22,6 +22,11 @@
             <id>jitpack</id>
             <url>https://jitpack.io</url>
         </repository>
+        <repository>
+            <id>ll-releases</id>
+            <name>Lavalink Releases</name>
+            <url>https://maven.lavalink.dev/releases</url>
+        </repository>
     </repositories>
 
     <dependencyManagement>
@@ -91,25 +96,24 @@
 
 
 
-        <!--        not needed-->
-        <dependency>
-            <groupId>org.apache.lucene</groupId>
-            <artifactId>lucene-core</artifactId>
-            <version>9.8.0</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.lucene</groupId>
-            <artifactId>lucene-suggest</artifactId>
-            <version>9.8.0</version>
-        </dependency>
-
-
-
         <dependency>
             <groupId>org.immutables</groupId>
             <artifactId>value</artifactId>
             <version>2.9.2</version>
             <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>dev.arbjerg</groupId>
+            <artifactId>lavalink-client</artifactId>
+            <version>2.4.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>5.9.2</version>
+            <scope>test</scope>
         </dependency>
 
     </dependencies>

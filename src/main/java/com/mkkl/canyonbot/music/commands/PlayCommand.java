@@ -4,13 +4,14 @@ import com.mkkl.canyonbot.commands.BotCommand;
 import com.mkkl.canyonbot.commands.DefaultErrorHandler;
 import com.mkkl.canyonbot.commands.RegisterCommand;
 import com.mkkl.canyonbot.music.exceptions.*;
-import com.mkkl.canyonbot.music.search.SearchService;
-import com.mkkl.canyonbot.music.search.SearchResult;
+import com.mkkl.canyonbot.music.services.search.SearchResultHandler;
+import com.mkkl.canyonbot.music.services.search.SearchService;
 import com.mkkl.canyonbot.music.search.SourceRegistry;
 import com.mkkl.canyonbot.music.search.internal.sources.SearchSource;
 import com.mkkl.canyonbot.music.services.*;
 import com.mkkl.canyonbot.music.services.search.PlaylistResultHandler;
 import com.mkkl.canyonbot.music.services.search.TrackResultHandler;
+import dev.arbjerg.lavalink.client.protocol.*;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
@@ -26,6 +27,7 @@ import lombok.Getter;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+import java.security.InvalidParameterException;
 import java.util.*;
 
 //TODO refactoring needed, this class handles too many operations
@@ -33,16 +35,15 @@ import java.util.*;
 public class PlayCommand extends BotCommand {
     private final SearchService searchService;
     private final SourceRegistry sourceRegistry;
-    private final GuildMusicBotService guildMusicBotService;
     private final PlaylistResultHandler playlistResultHandler;
     private final TrackResultHandler trackResultHandler;
+    private final SearchResultHandler searchResultHandler;
 
     public PlayCommand(SearchService searchService,
                        SourceRegistry sourceRegistry,
-                       GuildMusicBotService guildMusicBotService,
                        DefaultErrorHandler errorHandler,
                        PlaylistResultHandler playlistResultHandler,
-                       TrackResultHandler trackResultHandler) {
+                       TrackResultHandler trackResultHandler, SearchResultHandler searchResultHandler) {
         super(ApplicationCommandRequest.builder()
                 .name("play")
                 .description("Play a song")
@@ -82,9 +83,9 @@ public class PlayCommand extends BotCommand {
                 .build(), errorHandler);
         this.sourceRegistry = sourceRegistry;
         this.searchService = searchService;
-        this.guildMusicBotService = guildMusicBotService;
         this.playlistResultHandler = playlistResultHandler;
         this.trackResultHandler = trackResultHandler;
+        this.searchResultHandler = searchResultHandler;
     }
 
     @Override
@@ -112,7 +113,7 @@ public class PlayCommand extends BotCommand {
 
 
         return event.deferReply()
-                .then(event.getInteraction().getGuild().doOnNext(guildMusicBotService::createGuildMusicBot))
+                .then(event.getInteraction().getGuild())
                 .flatMap(guild -> handleQuery(new Context(event, query, sourceId, channel, guild)))
                 .then();
     }
@@ -123,23 +124,27 @@ public class PlayCommand extends BotCommand {
                 .switchIfEmpty(Mono.error(new QueryNotFoundException(context.event.getInteraction())))
                 .zipWhen(query -> {
                     if (context.sourceId.isEmpty())
-                        return searchService.search(query);
+                        return searchService.search(context.guild, query);
 
-                    Optional<SearchSource> searchSource = sourceRegistry.getSource(context.sourceId.get());
-                    if(searchSource.isEmpty())
+                    SearchSource searchSource;
+                    try {
+                        searchSource = sourceRegistry.getSource(context.sourceId.get());
+                    } catch (InvalidParameterException e) {
+                        //TODO getSource needs it's own exception, or a better way to handle this
                         return Mono.error(new SourceNotFoundException(context.sourceId.get()));
-                    return searchService.search(query, searchSource.get());
+                    }
+
+                    return searchService.search(context.guild, query, searchSource);
                 })
                 .flatMap(tuple -> {
-                    SearchResult searchResult = tuple.getT2();
-                    if (searchResult.getPlaylists() != null && !searchResult.getPlaylists().isEmpty()) {
-                        //SearchResult is a playlist
-                        return playlistResultHandler.handle(context, searchResult);
-                    } else if (searchResult.getTracks() != null && !searchResult.getTracks().isEmpty()) {
-                        //SearchResult is a track
-                        return trackResultHandler.handle(context, searchResult);
-                    }
-                    return Mono.error(new NoMatchException(tuple.getT1()));
+                    LavalinkLoadResult lavalinkLoadResult = tuple.getT2();
+                    return switch (lavalinkLoadResult) {
+                        case LoadFailed loadFailed -> Mono.error(new LoadFailedException(tuple.getT1(), loadFailed.getException()));
+                        case PlaylistLoaded playlistLoaded -> playlistResultHandler.handle(context, playlistLoaded);
+                        case TrackLoaded trackLoaded -> trackResultHandler.handle(context, trackLoaded);
+                        case SearchResult searchResult -> searchResultHandler.handle(context, searchResult);
+                        default -> Mono.error(new NoMatchException(tuple.getT1()));
+                    };
                 });
     }
 
@@ -148,7 +153,7 @@ public class PlayCommand extends BotCommand {
         for (SearchSource source : sources) {
             choices.add(ImmutableApplicationCommandOptionChoiceData.builder()
                     .name(source.name())
-                    .value(source.identifier())
+                    .value(source.searchIdentifier())
                     .build());
         }
         return choices;

@@ -4,6 +4,7 @@ import com.mkkl.canyonbot.commands.AutoCompleteCommand;
 import com.mkkl.canyonbot.commands.BotCommand;
 import com.mkkl.canyonbot.commands.CommandRegistry;
 import discord4j.core.DiscordClient;
+import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.ReactiveEventAdapter;
 import discord4j.core.event.domain.interaction.AutoCompleteInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
@@ -17,32 +18,32 @@ import java.util.Optional;
 
 @Component
 public class CommandExecutor {
-    private final DiscordClient discordClient;
+    private final GatewayDiscordClient gatewayDiscordClient;
     private final CommandRegistry commandRegistry;
 
     @Autowired
-    public CommandExecutor(DiscordClient discordClient, CommandRegistry commandRegistry) {
-        this.discordClient = discordClient;
+    public CommandExecutor(GatewayDiscordClient gatewayDiscordClient, CommandRegistry commandRegistry) {
+        this.gatewayDiscordClient = gatewayDiscordClient;
         this.commandRegistry = commandRegistry;
         this.register()
                 .subscribe(); // TODO move?
     }
 
     public Mono<Void> register() {
-        return discordClient.withGateway(gateway -> gateway.on(ChatInputInteractionEvent.class, event -> {
+        return gatewayDiscordClient.on(ChatInputInteractionEvent.class, event -> {
             //TODO localize
             return commandRegistry.getCommandByName(event.getCommandName())
                 .map(botCommand -> botCommand.execute(event)
                         .onErrorResume(throwable -> botCommand.getErrorHandler().handle(throwable, event)))
                 .orElseGet(() -> event.reply("Command not found"));
-            }))
-            .and(discordClient.withGateway(gateway -> gateway.on(ChatInputAutoCompleteEvent.class, event -> {
+            }).then()
+            .and(gatewayDiscordClient.on(ChatInputAutoCompleteEvent.class, event -> {
                 Optional<AutoCompleteCommand> optionalCommand = commandRegistry.getAutoCompleteCommandByName(event.getCommandName());
                 if (optionalCommand.isEmpty()) {
                     return Mono.empty();
                 }
                 return optionalCommand.get()
                         .autoComplete(event);
-            })));
+            }));
     }
 }

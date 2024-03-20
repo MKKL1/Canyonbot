@@ -4,6 +4,7 @@ import com.mkkl.canyonbot.commands.registrar.CommandRegistrarFactory;
 import com.mkkl.canyonbot.commands.registrar.GlobalCommandRegistrarFactory;
 import com.mkkl.canyonbot.commands.registrar.GuildCommandRegistrarFactory;
 import discord4j.common.util.Snowflake;
+import discord4j.core.GatewayDiscordClient;
 import discord4j.rest.RestClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -22,8 +23,8 @@ public class BotConfiguration {
 
     private final RestClient restClient;
 
-    public BotConfiguration(RestClient restClient) {
-        this.restClient = restClient;
+    public BotConfiguration(GatewayDiscordClient gatewayDiscordClient) {
+        this.restClient = gatewayDiscordClient.getRestClient();
     }
 
     @Bean

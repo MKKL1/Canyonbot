@@ -1,9 +1,8 @@
 package com.mkkl.canyonbot.commands;
 
-import com.mkkl.canyonbot.commands.exceptions.ReplyMessageException;
-import com.mkkl.canyonbot.commands.exceptions.UserResponseMessage;
+import com.mkkl.canyonbot.commands.exceptions.BotInternalException;
+import com.mkkl.canyonbot.commands.exceptions.BotExternalException;
 import com.mkkl.canyonbot.music.messages.generators.ErrorMessage;
-import com.mkkl.canyonbot.music.messages.generators.ErrorMessageGenerator;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.spec.InteractionFollowupCreateSpec;
 import lombok.extern.slf4j.Slf4j;
@@ -20,11 +19,11 @@ public class DefaultErrorHandler implements CommandErrorHandler {
 
         boolean respond = false;
         String message = "";
-        if (throwable instanceof ReplyMessageException replyMessageException) {
+        if (throwable instanceof BotInternalException botInternalException) {
             respond = true;
-            message = replyMessageException.getDiscordMessage();
-            log.error("Error was caught in stream", replyMessageException);
-        } else if (throwable instanceof UserResponseMessage userResponseMessage) {
+            message = botInternalException.getDiscordMessage();
+            log.error("Error was caught in stream", botInternalException);
+        } else if (throwable instanceof BotExternalException userResponseMessage) {
             respond = true;
             message = userResponseMessage.getDiscordMessage();
             log.debug("Error was caught in stream: " + userResponseMessage.getMessage());

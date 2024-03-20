@@ -1,37 +1,22 @@
 package com.mkkl.canyonbot.music.search.internal.sources.youtube;
 
-import com.mkkl.canyonbot.music.search.internal.sources.RegisterSource;
 import com.mkkl.canyonbot.music.search.internal.sources.SearchSource;
-import com.mkkl.canyonbot.music.search.SearchResult;
 import com.sedmelluq.discord.lavaplayer.source.youtube.YoutubeAudioSourceManager;
+import org.springframework.stereotype.Component;
 
-@RegisterSource(priority = 1)
+@Component
 public class YoutubeSearch implements SearchSource {
-
-    private final YoutubeAudioSourceManager sourceManager;
-    public static final String route = "ytsearch:";
-    public YoutubeSearch(YoutubeAudioSourceManager sourceManager) {
-        this.sourceManager = sourceManager;
-    }
-
-    @Override
-    public SearchResult search(String query) {
-        //TODO doesn't search for playlists
-        return YoutubeCommon.searchFromRoute(sourceManager, route, query, this);
-    }
-
     @Override
     public String name() {
         return "Youtube search";
     }
-
     @Override
-    public String identifier() {
-        return "yt";
+    public String logoUrl() {
+        return "https://cdn.discordapp.com/attachments/1168970395861397624/1168970843947286649/logo-youtube.png";
     }
 
     @Override
-    public String logoUrl() {
-        return YoutubeCommon.logoUrl;
+    public String searchIdentifier() {
+        return "ytsearch";
     }
 }

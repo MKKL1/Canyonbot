@@ -1,10 +1,10 @@
 package com.mkkl.canyonbot.music.exceptions;
 
 import com.mkkl.canyonbot.commands.exceptions.ExceptionFormatUtils;
-import com.mkkl.canyonbot.commands.exceptions.ReplyMessageException;
+import com.mkkl.canyonbot.commands.exceptions.BotInternalException;
 import discord4j.core.object.command.Interaction;
 
-public class QueryNotFoundException extends ReplyMessageException {
+public class QueryNotFoundException extends BotInternalException {
     public QueryNotFoundException(Interaction interaction) {
         super("Query not found", ExceptionFormatUtils.formatInteraction(interaction) + " query could not be retrieved");
     }
