@@ -28,6 +28,11 @@ public class PaginationController<T extends EmbedCreateSpec> {
         return createPage();
     }
 
+    private void checkRange() {
+        if(currentPage < 0) currentPage = 0;
+        else if (currentPage >= pages) currentPage = pages-1;
+    }
+
     private T createPage() {
         return pageConstructor.apply(new PageData(currentPage, pages, sizePerPage));
     }

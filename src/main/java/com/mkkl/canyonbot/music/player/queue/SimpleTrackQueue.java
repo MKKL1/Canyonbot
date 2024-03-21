@@ -2,9 +2,7 @@ package com.mkkl.canyonbot.music.player.queue;
 
 import jakarta.annotation.Nullable;
 
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Queue;
+import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 
 //Just a simple LinkedBlockingQueue adapter
@@ -16,6 +14,14 @@ public class SimpleTrackQueue implements TrackQueue {
     @Override
     public TrackQueueElement dequeue() {
         return queue.poll();
+    }
+
+    @Override
+    public void shuffle() {
+        List<TrackQueueElement> trackQueueElements = new ArrayList<>(queue);
+        Collections.shuffle(trackQueueElements);
+        queue.clear();
+        queue.addAll(trackQueueElements);
     }
 
     @Override

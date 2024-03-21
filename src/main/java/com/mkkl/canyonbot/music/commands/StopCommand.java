@@ -8,6 +8,7 @@ import com.mkkl.canyonbot.music.exceptions.GuildMusicBotNotCreated;
 import com.mkkl.canyonbot.music.player.LinkContext;
 import com.mkkl.canyonbot.music.player.LinkContextRegistry;
 import com.mkkl.canyonbot.music.player.TrackScheduler;
+import com.mkkl.canyonbot.music.services.ChannelConnectionService;
 import dev.arbjerg.lavalink.libraries.discord4j.Discord4JUtils;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
@@ -19,13 +20,15 @@ import reactor.core.publisher.Mono;
 public class StopCommand extends BotCommand {
     private final LinkContextRegistry linkContextRegistry;
     private final GatewayDiscordClient gatewayDiscordClient;
-    public StopCommand(DefaultErrorHandler errorHandler, LinkContextRegistry linkContextRegistry, GatewayDiscordClient gatewayDiscordClient) {
+    private final ChannelConnectionService channelConnectionService;
+    public StopCommand(DefaultErrorHandler errorHandler, LinkContextRegistry linkContextRegistry, GatewayDiscordClient gatewayDiscordClient, ChannelConnectionService channelConnectionService) {
         super(ApplicationCommandRequest.builder()
                 .name("stop")
                 .description("Stops playing music")
                 .build(), errorHandler);
         this.linkContextRegistry = linkContextRegistry;
         this.gatewayDiscordClient = gatewayDiscordClient;
+        this.channelConnectionService = channelConnectionService;
     }
 
     @Override
@@ -37,7 +40,7 @@ public class StopCommand extends BotCommand {
                 .flatMap(guild -> {
                     if (!linkContextRegistry.isCached(guild.getId().asLong()))
                         return Mono.error(new GuildMusicBotNotCreated(guild));
-                    return Discord4JUtils.leave(gatewayDiscordClient, guild.getId())
+                    return channelConnectionService.leave(guild.getId())
                             .then(event.reply("Disconnected bot"));
                 });
     }

@@ -44,11 +44,19 @@ import static com.mkkl.canyonbot.discord.PossibleUtil.mapPossible;
 @Value.Immutable
 public interface PaginationGenerator<T extends EmbedCreateSpec> {
     Function<PageData, T> pageConstructor();
+
+    /**
+     * Count of pages
+     */
     long pages();
     @Value.Default
     default long sizePerPage() {
         return 10;
     }
+
+    /**
+     * Current page in range [0,pages)
+     */
     @Value.Default
     default long currentPage() {
         return 0;
@@ -60,12 +68,18 @@ public interface PaginationGenerator<T extends EmbedCreateSpec> {
         builder.addEmbed(pageConstructor().apply(new PageData(currentPage(), pages(), sizePerPage())));
         CustomButton nextButton = ImmutableCustomButton.builder()
                 .label(">")
-                .interaction(event -> event.deferReply().then(event.getInteractionResponse().deleteInitialResponse()).then(event.getMessage().orElseThrow().edit().withEmbeds(paginationController.next()))
+                .interaction(event -> event
+                        .deferReply()
+                        .then(event.getInteractionResponse().deleteInitialResponse())
+                        .then(event.getMessage().orElseThrow().edit().withEmbeds(paginationController.next()))
                 ).build();
         CustomButton prevButton = ImmutableCustomButton.builder()
                 .label("<")
-                .interaction(event -> event.deferReply().then(event.getInteractionResponse().deleteInitialResponse()).then(event.getMessage().orElseThrow().edit().withEmbeds(paginationController.prev()))
-                ).build();
+                .interaction(event -> event
+                        .deferReply()
+                        .then(event.getInteractionResponse().deleteInitialResponse())
+                        .then(event.getMessage().orElseThrow().edit().withEmbeds(paginationController.prev())))
+                .build();
         builder.addComponent(ActionRow.of(prevButton.asMessageComponent(), nextButton.asMessageComponent()));
         builder.interaction(ResponseInteraction.builder()
                 .addInteractableComponent(nextButton)

@@ -41,6 +41,8 @@ public class PlayTrackService {
     private LinkContextRegistry linkContextRegistry;
     @Autowired
     private VoiceConnectionRegistry voiceConnectionRegistry;
+    @Autowired
+    private ChannelConnectionService channelConnectionService;
 
     public Mono<Void> playTrack(Guild guild, Mono<Channel> channelMono, Interaction interaction, Track track) {
         return Mono.fromCallable(() -> linkContextRegistry.getOrCreate(guild))
@@ -65,7 +67,7 @@ public class PlayTrackService {
                                     return Mono.error(new InvalidAudioChannelException(interaction));
                                 return Mono.just((AudioChannel) channel);
                             })
-                            .flatMap(audioChannel -> audioChannel.sendConnectVoiceState(false, false));
+                            .flatMap(channelConnectionService::join);
 
                     Mono<Void> joinMono = Mono.defer(() ->
                                     voiceConnectionRegistry.isSet(guild.getId().asLong()) ? Mono.empty() : connect

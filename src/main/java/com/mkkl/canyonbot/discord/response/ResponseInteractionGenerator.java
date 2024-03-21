@@ -34,7 +34,6 @@ public interface ResponseInteractionGenerator {
     //Sometimes it's better to not pass message TODO remove message argument?
     default Mono<Void> interaction(Message message) {
          Flux<?> flux = gateway().on(ComponentInteractionEvent.class, e -> {
-             System.out.println(e.getCustomId());//debug log
              return Flux.fromIterable(interactableComponents())
                      .filter(component -> e.getCustomId()
                              .equals(component.getId()))

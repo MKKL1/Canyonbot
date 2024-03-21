@@ -1,6 +1,7 @@
 package com.mkkl.canyonbot.music.player;
 
 import com.mkkl.canyonbot.event.EventDispatcher;
+import com.mkkl.canyonbot.music.player.event.MayStopPlayerEvent;
 import com.mkkl.canyonbot.music.player.event.lavalink.player.PlayerTrackEndEvent;
 import com.mkkl.canyonbot.music.player.event.scheduler.QueueEmptyEvent;
 import com.mkkl.canyonbot.music.player.queue.TrackQueue;
@@ -28,17 +29,17 @@ public class TrackScheduler {
                 .filter(trackEndEvent -> trackEndEvent.getReason().getMayStartNext())
                 .flatMap(trackEndEvent ->
                         //May play next
-                        playNext().switchIfEmpty(Mono.defer(() -> {
+                        playNext().switchIfEmpty(Mono.fromRunnable(() -> {
                             //Queue empty
-                            eventDispatcher.publish(new QueueEmptyEvent(guildId, trackQueue));
                             state = State.STOPPED;
-                            return Mono.empty();
+                            eventDispatcher.publish(new QueueEmptyEvent(guildId, trackQueue));
+                            eventDispatcher.publish(new MayStopPlayerEvent(guildId));
                         })))
-                .switchIfEmpty(Mono.defer(() -> {
+                .switchIfEmpty(Mono.fromRunnable(() -> {
                     //Cannot play next
                     state = State.STOPPED;
                     currentTrack = null;
-                    return Mono.empty();
+                    eventDispatcher.publish(new MayStopPlayerEvent(guildId));
                 })).subscribe();
     }
 

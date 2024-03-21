@@ -8,4 +8,6 @@ import java.util.Collection;
 public interface TrackQueue extends Collection<TrackQueueElement> {
     @Nullable
     TrackQueueElement dequeue();
+
+    void shuffle();
 }
