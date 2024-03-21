@@ -9,7 +9,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.Optional;
 
 @Component
 public class SourceRegistry {
@@ -28,7 +27,7 @@ public class SourceRegistry {
 //                throw new IllegalArgumentException("Duplicate searchIdentifier: " + source.searchIdentifier());
 //            }
             sourceList.add(source);
-            sourceMap.put(source.searchIdentifier(), source);
+            sourceMap.put(source.prefix(), source);
         }
     }
 

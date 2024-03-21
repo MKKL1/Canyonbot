@@ -48,14 +48,14 @@ public class ShowQueueCommand extends BotCommand {
     @Override
     public Mono<Void> execute(ChatInputInteractionEvent event) {
         return event.getInteraction().getGuild()
-                .filter(linkContextRegistry::isCached)
+                .filter(guild -> linkContextRegistry.isCached(guild.getId().asLong()))
                 .switchIfEmpty(Mono.error(new BotExternalException("Queue is empty")))
                 .flatMap(guild -> Mono.just(new Parameters(guild, event.getInteraction().getCommandInteraction()
                         .flatMap(aci -> aci.getOption(PAGE_OPTION_NAME))
                         .flatMap(ApplicationCommandInteractionOption::getValue)
                         .map(ApplicationCommandInteractionOptionValue::asLong))))
                 .flatMap(parameters -> {
-                    LinkContext linkContext = linkContextRegistry.getCached(parameters.guild).get();
+                    LinkContext linkContext = linkContextRegistry.getCached(parameters.guild.getId().asLong()).get();
                     long page = FIRST_PAGE;
                     long maxPage = (long) Math.floor(((float) linkContext.getTrackQueue().size() / ELEMENTS_PER_PAGE) + 1);
                     if (parameters.page.isPresent()) {

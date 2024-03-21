@@ -9,6 +9,6 @@ public class SearchQuery {
     private String identifier;
 
     public String getQuery() {
-        return source.searchIdentifier() + ":\"" + identifier + "\"";
+        return source.prefix() + identifier;
     }
 }

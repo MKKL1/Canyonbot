@@ -1,6 +1,7 @@
 package com.mkkl.canyonbot.music.services;
 
 import com.mkkl.canyonbot.discord.ClientConfiguration;
+import com.mkkl.canyonbot.music.VoiceConnectionRegistry;
 import com.mkkl.canyonbot.music.exceptions.ChannelNotFoundException;
 import com.mkkl.canyonbot.music.exceptions.InvalidAudioChannelException;
 import com.mkkl.canyonbot.music.exceptions.MemberNotFoundException;
@@ -32,13 +33,14 @@ import reactor.function.TupleUtils;
 
 import java.time.Duration;
 
+//TODO add more methods/rename
 @Slf4j
 @Service
 public class PlayTrackService {
     @Autowired
     private LinkContextRegistry linkContextRegistry;
     @Autowired
-    private GatewayDiscordClient gatewayDiscordClient;
+    private VoiceConnectionRegistry voiceConnectionRegistry;
 
     public Mono<Void> playTrack(Guild guild, Mono<Channel> channelMono, Interaction interaction, Track track) {
         return Mono.fromCallable(() -> linkContextRegistry.getOrCreate(guild))
@@ -65,9 +67,9 @@ public class PlayTrackService {
                             })
                             .flatMap(audioChannel -> audioChannel.sendConnectVoiceState(false, false));
 
-                    Mono<Void> joinMono = gatewayDiscordClient.getVoiceConnectionRegistry().getVoiceConnection(guild.getId())
-                            .switchIfEmpty(connect.cast(VoiceConnection.class))//TODO test
-                            .then();
+                    Mono<Void> joinMono = Mono.defer(() ->
+                                    voiceConnectionRegistry.isSet(guild.getId().asLong()) ? Mono.empty() : connect
+                                    );
 
 
                     Mono<Void> startMono = Mono.defer(() -> {
@@ -75,7 +77,7 @@ public class PlayTrackService {
                             return linkContext.getTrackScheduler().beginPlayback();
                         return Mono.empty();
                     });
-                    return enqueueMono.and(initPlayer).and(joinMono).then(startMono);
+                    return enqueueMono.then(initPlayer).then(joinMono).then(startMono);
                 });
     }
 }

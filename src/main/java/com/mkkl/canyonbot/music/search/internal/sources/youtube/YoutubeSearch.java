@@ -16,7 +16,7 @@ public class YoutubeSearch implements SearchSource {
     }
 
     @Override
-    public String searchIdentifier() {
-        return "ytsearch";
+    public String prefix() {
+        return "ytsearch:";
     }
 }

@@ -12,8 +12,8 @@ public class YoutubeMusicSearch implements SearchSource {
     }
 
     @Override
-    public String searchIdentifier() {
-        return "ytmsearch";
+    public String prefix() {
+        return "ytmsearch:";
     }
 
     @Override

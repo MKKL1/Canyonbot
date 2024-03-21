@@ -1,6 +1,8 @@
 package com.mkkl.canyonbot.music;
 
 import com.mkkl.canyonbot.commands.exceptions.BotInternalException;
+import com.mkkl.canyonbot.music.player.LinkContext;
+import com.mkkl.canyonbot.music.player.LinkContextRegistry;
 import dev.arbjerg.lavalink.client.LavalinkClient;
 import dev.arbjerg.lavalink.client.LavalinkPlayer;
 import dev.arbjerg.lavalink.client.Link;
@@ -13,50 +15,59 @@ import discord4j.core.event.domain.VoiceServerUpdateEvent;
 import discord4j.core.event.domain.VoiceStateUpdateEvent;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
 import java.util.Objects;
+import java.util.Optional;
 
 @Slf4j
+@Component
 public class VoiceUpdateHandler {
 
+    public VoiceUpdateHandler(GatewayDiscordClient gateway, LavalinkClient lavalinkClient, LinkContextRegistry linkContextRegistry, VoiceConnectionRegistry voiceConnectionRegistry) {
+        Mono<Void> voiceStateUpdate = gateway.on(VoiceStateUpdateEvent.class)
+                .flatMap(event -> {
+                    discord4j.core.object.VoiceState update = event.getCurrent();
+                    if (!update.getUserId().equals(update.getClient().getSelfId()))
+                        return Mono.empty();
 
-    public static Mono<?> install(GatewayDiscordClient gatewayDiscordClient, LavalinkClient lavalinkClient) {
-        Mono<Void> voiceStateUpdate = gatewayDiscordClient.on(VoiceStateUpdateEvent.class)
-        .flatMap(event -> {
-            discord4j.core.object.VoiceState update = event.getCurrent();
-            if (!update.getUserId().equals(update.getClient().getSelfId()))
-                return Mono.empty();
+                    long guildId = update.getGuildId().asLong();
 
-            long guildId = update.getGuildId().asLong();
+                    Optional<LinkContext> linkContextOptional = linkContextRegistry.getCached(update.getGuildId().asLong());
 
-            Link link = lavalinkClient.getLinkIfCached(guildId);
-            if(link == null)
-                return Mono.error(new VoiceUpdateHandlerException(new NullPointerException("Link was undefined"), "Link was expected to be cached", guildId));
+                    //TODO LinkContext being undefined is not always incorrect
+                    if(linkContextOptional.isEmpty())
+                        return Mono.error(new VoiceUpdateHandlerException(new NullPointerException("LinkContext was undefined"), "LinkContext was expected to be cached", guildId));
+                    LinkContext linkContext = linkContextOptional.get();
 
-            LavalinkPlayer player = link.getNode().getCachedPlayer(guildId);
-            if(player == null)
-                return Mono.error(new VoiceUpdateHandlerException(new NullPointerException("LavalinkPlayer was undefined"), "Player was expected to be cached", guildId));
+                    Link link = linkContext.getLink();
 
-            PlayerState playerState = player.getState();
+                    LavalinkPlayer player = link.getNode().getCachedPlayer(guildId);
+                    if(player == null)
+                        return Mono.error(new VoiceUpdateHandlerException(new NullPointerException("LavalinkPlayer was undefined"), "Player was expected to be cached", guildId));
 
-            if (update.getChannelId().isEmpty() && playerState.getConnected()) {
-                link.setState$lavalink_client(LinkState.DISCONNECTED);
-                return link.destroy();
-            } else {
-                link.setState$lavalink_client(LinkState.CONNECTED);
-                return Mono.empty();
-            }
-        }).then();
+                    PlayerState playerState = player.getState();
 
-        Mono<Void> voiceServerUpdate = gatewayDiscordClient.getEventDispatcher()
+                    if (update.getChannelId().isEmpty() && playerState.getConnected()) {
+                        link.setState$lavalink_client(LinkState.DISCONNECTED);
+                        voiceConnectionRegistry.remove(guildId);
+                        return linkContextRegistry.destroy(guildId);
+                    } else {
+                        voiceConnectionRegistry.set(guildId);
+                        link.setState$lavalink_client(LinkState.CONNECTED);
+                        return Mono.empty();
+                    }
+                }).then();
+
+        Mono<Void> voiceServerUpdate = gateway.getEventDispatcher()
                 .on(VoiceServerUpdateEvent.class)
                 .next()
                 .flatMap(event -> {
                     VoiceState voiceState = new VoiceState(
                             event.getToken(),
                             Objects.requireNonNull(event.getEndpoint()),
-                            gatewayDiscordClient.getGatewayClient(event.getShardInfo().getIndex()).get().getSessionId());
+                            gateway.getGatewayClient(event.getShardInfo().getIndex()).get().getSessionId());
                     Link link = lavalinkClient.getOrCreateLink(
                             event.getGuildId().asLong(),
                             VoiceRegion.fromEndpoint(Objects.requireNonNull(event.getEndpoint())));
@@ -64,7 +75,13 @@ public class VoiceUpdateHandler {
                     return Mono.empty();
                 }).then();
 
-        return voiceStateUpdate.and(voiceServerUpdate);
+        voiceStateUpdate.and(voiceServerUpdate)
+                .doOnError(VoiceUpdateHandler.VoiceUpdateHandlerException.class,
+                        throwable -> log.error("guild:" + throwable.getGuildId() + " " + throwable.getMessage()))
+                .onErrorResume(VoiceUpdateHandler.VoiceUpdateHandlerException.class, throwable -> Mono.empty())
+                .subscribe();
+
+
     }
 
     @Getter

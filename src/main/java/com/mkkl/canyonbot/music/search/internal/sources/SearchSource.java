@@ -7,5 +7,5 @@ public interface SearchSource {
     default String logoUrl() {
         return null;
     }
-    String searchIdentifier();
+    String prefix();
 }

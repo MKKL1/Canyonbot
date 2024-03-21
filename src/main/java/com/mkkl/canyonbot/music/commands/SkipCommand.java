@@ -28,9 +28,9 @@ public class SkipCommand extends BotCommand {
         return event.getInteraction()
                 .getGuild()
                 .flatMap(guild -> {
-                    if (!linkContextRegistry.isCached(guild))
+                    if (!linkContextRegistry.isCached(guild.getId().asLong()))
                         return Mono.error(new GuildMusicBotNotCreated(guild));
-                    return linkContextRegistry.getCached(guild)
+                    return linkContextRegistry.getCached(guild.getId().asLong())
                             .get()
                             .getTrackScheduler()
                             .skip()

@@ -62,10 +62,6 @@ public class ClientConfiguration {
     @Bean
     public LavalinkClient lavalinkClient() {
         LavalinkClient client = new LavalinkClient(Helpers.getUserIdFromToken(token));
-        VoiceUpdateHandler.install(gateway(), client)
-                .doOnError(VoiceUpdateHandler.VoiceUpdateHandlerException.class,
-                        throwable -> log.error("guild:" + throwable.getGuildId() + " " + throwable.getMessage()))
-                .subscribe();
 
         client.getLoadBalancer().addPenaltyProvider(new VoiceRegionPenaltyProvider());
         client.addNode(new NodeOptions.Builder().setName("Lavalink server 1")

@@ -7,12 +7,9 @@ import com.mkkl.canyonbot.music.player.queue.TrackQueue;
 import com.mkkl.canyonbot.music.player.queue.TrackQueueElement;
 import dev.arbjerg.lavalink.client.LavalinkPlayer;
 import dev.arbjerg.lavalink.client.Link;
-import discord4j.core.object.entity.Guild;
 import jakarta.annotation.Nullable;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Configurable;
 import reactor.core.publisher.Mono;
 
 @Slf4j
@@ -24,7 +21,7 @@ public class TrackScheduler {
     private final TrackQueue trackQueue;
     private final Link link;
     //It is only needed in constructor so should I just pass it as a parameter?
-    public TrackScheduler(TrackQueue trackQueue, Link link, Guild guild, EventDispatcher eventDispatcher) {
+    public TrackScheduler(TrackQueue trackQueue, Link link, long guildId, EventDispatcher eventDispatcher) {
         this.link = link;
         this.trackQueue = trackQueue;
         eventDispatcher.on(PlayerTrackEndEvent.class)
@@ -33,7 +30,7 @@ public class TrackScheduler {
                         //May play next
                         playNext().switchIfEmpty(Mono.defer(() -> {
                             //Queue empty
-                            eventDispatcher.publish(new QueueEmptyEvent(guild.getId().asLong(), trackQueue));
+                            eventDispatcher.publish(new QueueEmptyEvent(guildId, trackQueue));
                             state = State.STOPPED;
                             return Mono.empty();
                         })))

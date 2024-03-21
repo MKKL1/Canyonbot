@@ -16,7 +16,7 @@ public class YoutubeLinkSearch implements SearchSource {
     }
 
     @Override
-    public String searchIdentifier() {
+    public String prefix() {
         return "";
     }
 

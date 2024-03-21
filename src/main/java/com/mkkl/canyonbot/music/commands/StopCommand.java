@@ -8,19 +8,24 @@ import com.mkkl.canyonbot.music.exceptions.GuildMusicBotNotCreated;
 import com.mkkl.canyonbot.music.player.LinkContext;
 import com.mkkl.canyonbot.music.player.LinkContextRegistry;
 import com.mkkl.canyonbot.music.player.TrackScheduler;
+import dev.arbjerg.lavalink.libraries.discord4j.Discord4JUtils;
+import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.discordjson.json.ApplicationCommandRequest;
+import discord4j.voice.VoiceConnection;
 import reactor.core.publisher.Mono;
 
 @RegisterCommand
 public class StopCommand extends BotCommand {
     private final LinkContextRegistry linkContextRegistry;
-    public StopCommand(DefaultErrorHandler errorHandler, LinkContextRegistry linkContextRegistry) {
+    private final GatewayDiscordClient gatewayDiscordClient;
+    public StopCommand(DefaultErrorHandler errorHandler, LinkContextRegistry linkContextRegistry, GatewayDiscordClient gatewayDiscordClient) {
         super(ApplicationCommandRequest.builder()
                 .name("stop")
                 .description("Stops playing music")
                 .build(), errorHandler);
         this.linkContextRegistry = linkContextRegistry;
+        this.gatewayDiscordClient = gatewayDiscordClient;
     }
 
     @Override
@@ -30,14 +35,10 @@ public class StopCommand extends BotCommand {
                 //TODO there is no check for player not being used at all at given guild
                 // it could lead to unnecessary resource usage
                 .flatMap(guild -> {
-                    if (!linkContextRegistry.isCached(guild))
+                    if (!linkContextRegistry.isCached(guild.getId().asLong()))
                         return Mono.error(new GuildMusicBotNotCreated(guild));
-                    LinkContext linkContext = linkContextRegistry.getCached(guild).get();
-                    if(linkContext.getTrackScheduler().getState() == TrackScheduler.State.STOPPED)
-                        //TODO not sure if I need new class just for that
-                        return Mono.error(new BotExternalException("Player is already stopped"));
-                    return linkContext.getTrackScheduler().stop()
-                            .then(event.reply("Stopped playing music and cleared the queue"));
+                    return Discord4JUtils.leave(gatewayDiscordClient, guild.getId())
+                            .then(event.reply("Disconnected bot"));
                 });
     }
 

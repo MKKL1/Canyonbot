@@ -12,7 +12,7 @@ public class EventDispatcher {
     private final Sinks.Many<AbstractEvent> events = Sinks.many().multicast().onBackpressureBuffer();
 
     public void publish(AbstractEvent event) {
-        log.debug("Publishing event " + event);
+        log.info("Publishing event " + event);
         events.emitNext(event, Sinks.EmitFailureHandler.FAIL_FAST);
     }
 

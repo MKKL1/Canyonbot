@@ -8,7 +8,6 @@ import com.mkkl.canyonbot.music.services.search.SearchResultHandler;
 import com.mkkl.canyonbot.music.services.search.SearchService;
 import com.mkkl.canyonbot.music.search.SourceRegistry;
 import com.mkkl.canyonbot.music.search.internal.sources.SearchSource;
-import com.mkkl.canyonbot.music.services.*;
 import com.mkkl.canyonbot.music.services.search.PlaylistResultHandler;
 import com.mkkl.canyonbot.music.services.search.TrackResultHandler;
 import dev.arbjerg.lavalink.client.protocol.*;
@@ -153,7 +152,7 @@ public class PlayCommand extends BotCommand {
         for (SearchSource source : sources) {
             choices.add(ImmutableApplicationCommandOptionChoiceData.builder()
                     .name(source.name())
-                    .value(source.searchIdentifier())
+                    .value(source.prefix())
                     .build());
         }
         return choices;
