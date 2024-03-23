@@ -2,7 +2,6 @@ package com.mkkl.canyonbot.music.player.event.lavalink;
 
 import com.mkkl.canyonbot.event.GuildEvent;
 import com.mkkl.canyonbot.music.player.event.LavaLinkEvent;
-import com.mkkl.canyonbot.music.player.event.PlayerEvent;
 import dev.arbjerg.lavalink.client.LavalinkNode;
 import dev.arbjerg.lavalink.protocol.v4.PlayerState;
 import lombok.Getter;

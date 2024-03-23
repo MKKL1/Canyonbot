@@ -6,7 +6,6 @@ import reactor.core.publisher.Mono;
 
 import java.util.Collections;
 import java.util.Optional;
-import java.util.function.Function;
 
 public class TimeoutUtils {
     public static Mono<Void> clearActionBar(Message message) {

@@ -5,15 +5,10 @@ import com.mkkl.canyonbot.music.player.event.lavalink.player.PlayerTrackEndEvent
 import com.mkkl.canyonbot.music.player.event.lavalink.player.PlayerTrackExceptionEvent;
 import com.mkkl.canyonbot.music.player.event.lavalink.player.PlayerTrackStartEvent;
 import com.mkkl.canyonbot.music.player.event.lavalink.player.PlayerTrackStuckEvent;
-import dev.arbjerg.lavalink.client.ClientEvent;
 import dev.arbjerg.lavalink.client.PlayerUpdateEvent;
 import dev.arbjerg.lavalink.client.ReadyEvent;
 import dev.arbjerg.lavalink.client.StatsEvent;
-import dev.arbjerg.lavalink.client.TrackEndEvent;
-import dev.arbjerg.lavalink.client.TrackExceptionEvent;
-import dev.arbjerg.lavalink.client.TrackStartEvent;
-import dev.arbjerg.lavalink.client.TrackStuckEvent;
-import dev.arbjerg.lavalink.client.WebSocketClosedEvent;
+import dev.arbjerg.lavalink.client.*;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;

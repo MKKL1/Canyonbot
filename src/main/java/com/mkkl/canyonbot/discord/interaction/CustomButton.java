@@ -1,6 +1,5 @@
 package com.mkkl.canyonbot.discord.interaction;
 
-import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ButtonInteractionEvent;
 import discord4j.core.object.component.ActionComponent;
 import discord4j.core.object.component.Button;
@@ -10,7 +9,6 @@ import discord4j.discordjson.json.ComponentData;
 import discord4j.discordjson.json.ImmutableComponentData;
 import org.immutables.value.Value;
 
-import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 

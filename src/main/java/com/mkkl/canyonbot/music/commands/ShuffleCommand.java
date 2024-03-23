@@ -4,23 +4,10 @@ import com.mkkl.canyonbot.commands.BotCommand;
 import com.mkkl.canyonbot.commands.DefaultErrorHandler;
 import com.mkkl.canyonbot.commands.RegisterCommand;
 import com.mkkl.canyonbot.commands.exceptions.BotExternalException;
-import com.mkkl.canyonbot.discord.response.Response;
-import com.mkkl.canyonbot.music.messages.generators.QueueMessage;
-import com.mkkl.canyonbot.music.player.LinkContext;
 import com.mkkl.canyonbot.music.player.LinkContextRegistry;
-import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
-import discord4j.core.object.command.ApplicationCommandInteractionOption;
-import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
-import discord4j.core.object.command.ApplicationCommandOption;
-import discord4j.core.object.entity.Guild;
-import discord4j.discordjson.json.ApplicationCommandOptionData;
 import discord4j.discordjson.json.ApplicationCommandRequest;
-import lombok.AllArgsConstructor;
 import reactor.core.publisher.Mono;
-
-import java.util.Objects;
-import java.util.Optional;
 
 @RegisterCommand
 public class ShuffleCommand extends BotCommand {

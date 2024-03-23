@@ -3,17 +3,12 @@ package com.mkkl.canyonbot.music.commands;
 import com.mkkl.canyonbot.commands.BotCommand;
 import com.mkkl.canyonbot.commands.DefaultErrorHandler;
 import com.mkkl.canyonbot.commands.RegisterCommand;
-import com.mkkl.canyonbot.commands.exceptions.BotExternalException;
 import com.mkkl.canyonbot.music.exceptions.GuildMusicBotNotCreated;
-import com.mkkl.canyonbot.music.player.LinkContext;
 import com.mkkl.canyonbot.music.player.LinkContextRegistry;
-import com.mkkl.canyonbot.music.player.TrackScheduler;
 import com.mkkl.canyonbot.music.services.ChannelConnectionService;
-import dev.arbjerg.lavalink.libraries.discord4j.Discord4JUtils;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.discordjson.json.ApplicationCommandRequest;
-import discord4j.voice.VoiceConnection;
 import reactor.core.publisher.Mono;
 
 @RegisterCommand

@@ -1,13 +1,10 @@
 package com.mkkl.canyonbot.music.messages;
 
-import discord4j.core.object.Embed;
 import discord4j.core.spec.EmbedCreateFields;
-import lombok.Builder;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 
 //For now it will stay here, but it's not really working. Columns tend to go under the table
 public class FieldTable {

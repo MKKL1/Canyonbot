@@ -1,15 +1,10 @@
 package com.mkkl.canyonbot.commands.internal;
 
 import com.mkkl.canyonbot.commands.AutoCompleteCommand;
-import com.mkkl.canyonbot.commands.BotCommand;
 import com.mkkl.canyonbot.commands.CommandRegistry;
-import discord4j.core.DiscordClient;
 import discord4j.core.GatewayDiscordClient;
-import discord4j.core.event.ReactiveEventAdapter;
-import discord4j.core.event.domain.interaction.AutoCompleteInteractionEvent;
 import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
-import org.reactivestreams.Publisher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;

@@ -4,7 +4,6 @@ import com.mkkl.canyonbot.discord.interaction.InteractableComponent;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.interaction.ComponentInteractionEvent;
 import discord4j.core.object.entity.Message;
-import discord4j.discordjson.possible.Possible;
 import org.immutables.value.Value;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;

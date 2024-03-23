@@ -73,12 +73,12 @@
             <artifactId>pf4j</artifactId>
             <version>3.9.0</version>
         </dependency>
-        <dependency>
-            <groupId>dev.arbjerg</groupId>
-            <artifactId>lavaplayer</artifactId>
-            <version>2.0.1</version>
-            <scope>compile</scope>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>dev.arbjerg</groupId>-->
+<!--            <artifactId>lavaplayer</artifactId>-->
+<!--            <version>2.0.1</version>-->
+<!--            <scope>compile</scope>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-autoconfigure</artifactId>
@@ -88,11 +88,11 @@
 <!--            <artifactId>lavasrc</artifactId>-->
 <!--            <version>4.0.0-beta.7</version>-->
 <!--        </dependency>-->
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>32.1.3-jre</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.google.guava</groupId>-->
+<!--            <artifactId>guava</artifactId>-->
+<!--            <version>32.1.3-jre</version>-->
+<!--        </dependency>-->
 
 
 
@@ -123,6 +123,15 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <image>
+                        <name>${project.artifactId}:${project.version}</name>
+                        <env>
+                            <BP_JVM_VERSION>${java.version}</BP_JVM_VERSION>
+                        </env>
+                        <builder>paketobuildpacks/builder-jammy-base:latest</builder>
+                    </image>
+                </configuration>
             </plugin>
         </plugins>
     </build>

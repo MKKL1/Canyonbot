@@ -4,7 +4,6 @@ import com.mkkl.canyonbot.event.EventDispatcher;
 import com.mkkl.canyonbot.music.player.queue.SimpleTrackQueue;
 import com.mkkl.canyonbot.music.player.queue.TrackQueue;
 import dev.arbjerg.lavalink.client.Link;
-import discord4j.core.object.entity.Guild;
 import lombok.Getter;
 import reactor.core.publisher.Mono;
 

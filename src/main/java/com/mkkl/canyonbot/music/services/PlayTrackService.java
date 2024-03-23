@@ -1,6 +1,5 @@
 package com.mkkl.canyonbot.music.services;
 
-import com.mkkl.canyonbot.discord.ClientConfiguration;
 import com.mkkl.canyonbot.music.VoiceConnectionRegistry;
 import com.mkkl.canyonbot.music.exceptions.ChannelNotFoundException;
 import com.mkkl.canyonbot.music.exceptions.InvalidAudioChannelException;
@@ -9,29 +8,16 @@ import com.mkkl.canyonbot.music.player.LinkContextRegistry;
 import com.mkkl.canyonbot.music.player.TrackScheduler;
 import com.mkkl.canyonbot.music.player.queue.TrackQueueElement;
 import dev.arbjerg.lavalink.client.protocol.Track;
-import discord4j.common.util.Snowflake;
-import discord4j.core.GatewayDiscordClient;
-import discord4j.core.event.domain.VoiceServerUpdateEvent;
-import discord4j.core.event.domain.VoiceStateUpdateEvent;
 import discord4j.core.object.VoiceState;
 import discord4j.core.object.command.Interaction;
 import discord4j.core.object.entity.Guild;
 import discord4j.core.object.entity.PartialMember;
 import discord4j.core.object.entity.channel.AudioChannel;
 import discord4j.core.object.entity.channel.Channel;
-import discord4j.core.spec.AudioChannelJoinSpec;
-import discord4j.discordjson.json.gateway.VoiceStateUpdate;
-import discord4j.gateway.GatewayClientGroup;
-import discord4j.gateway.json.ShardGatewayPayload;
-import discord4j.voice.VoiceConnection;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.function.TupleUtils;
-
-import java.time.Duration;
 
 //TODO add more methods/rename
 @Slf4j

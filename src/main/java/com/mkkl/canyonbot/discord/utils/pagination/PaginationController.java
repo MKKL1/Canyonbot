@@ -1,7 +1,6 @@
 package com.mkkl.canyonbot.discord.utils.pagination;
 
 import discord4j.core.spec.EmbedCreateSpec;
-import lombok.AllArgsConstructor;
 
 import java.util.function.Function;
 

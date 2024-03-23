@@ -1,7 +1,6 @@
 package com.mkkl.canyonbot.music.player;
 
 import com.mkkl.canyonbot.event.EventDispatcher;
-import com.mkkl.canyonbot.music.VoiceUpdateHandler;
 import com.mkkl.canyonbot.music.player.event.LinkContextCreationEvent;
 import com.mkkl.canyonbot.music.player.event.LinkContextDestroyEvent;
 import dev.arbjerg.lavalink.client.LavalinkClient;

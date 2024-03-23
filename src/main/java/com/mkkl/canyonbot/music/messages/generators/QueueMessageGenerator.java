@@ -1,21 +1,16 @@
 package com.mkkl.canyonbot.music.messages.generators;
 
 import com.mkkl.canyonbot.discord.response.Response;
-import com.mkkl.canyonbot.discord.utils.pagination.PageData;
 import com.mkkl.canyonbot.discord.utils.pagination.Pagination;
-import com.mkkl.canyonbot.discord.utils.pagination.PaginationGenerator;
 import com.mkkl.canyonbot.music.messages.ResponseMessage;
 import com.mkkl.canyonbot.music.player.queue.TrackQueueElement;
 import discord4j.core.GatewayDiscordClient;
-import discord4j.core.object.component.ActionRow;
-import discord4j.core.object.component.Button;
 import discord4j.core.object.entity.User;
 import discord4j.core.spec.EmbedCreateSpec;
 import org.immutables.value.Value;
-import reactor.core.publisher.Mono;
 
-import java.time.Instant;
-import java.util.*;
+import java.util.Iterator;
+import java.util.Optional;
 
 @Value.Immutable
 public interface QueueMessageGenerator extends ResponseMessage {
