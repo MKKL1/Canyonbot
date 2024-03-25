@@ -1,4 +1,4 @@
-package com.mkkl.canyonbot.music.services.search;
+package com.mkkl.canyonbot.music.services;
 
 import com.mkkl.canyonbot.music.search.SearchQuery;
 import com.mkkl.canyonbot.music.search.internal.sources.SearchSource;

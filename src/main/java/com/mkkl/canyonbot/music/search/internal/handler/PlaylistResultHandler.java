@@ -1,4 +1,4 @@
-package com.mkkl.canyonbot.music.services.search;
+package com.mkkl.canyonbot.music.search.internal.handler;
 
 import com.mkkl.canyonbot.discord.response.Response;
 import com.mkkl.canyonbot.discord.utils.TimeoutUtils;
@@ -7,25 +7,30 @@ import com.mkkl.canyonbot.music.messages.generators.ShortPlaylistMessage;
 import com.mkkl.canyonbot.music.player.LinkContext;
 import com.mkkl.canyonbot.music.player.LinkContextRegistry;
 import com.mkkl.canyonbot.music.player.queue.TrackQueueElement;
-import com.mkkl.canyonbot.music.services.PlayTrackService;
+import com.mkkl.canyonbot.music.services.PlayerService;
 import dev.arbjerg.lavalink.client.protocol.PlaylistLoaded;
+import dev.arbjerg.lavalink.client.protocol.Track;
 import discord4j.core.GatewayDiscordClient;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
-@Service
+import java.security.InvalidParameterException;
+import java.util.Optional;
+
+@Component
 public class PlaylistResultHandler implements LavalinkLoadResultHandler<PlaylistLoaded> {
-    @Autowired
-    private PlayTrackService playTrackService;
     @Autowired
     private GatewayDiscordClient gateway;
     @Autowired
     private LinkContextRegistry linkContextRegistry;
 
     @Override
-    public Mono<?> handle(PlayCommand.Context context, PlaylistLoaded playlistLoaded) {
-        LinkContext linkContext = linkContextRegistry.getOrCreate(context.getGuild());
+    public ResultHandlerResponse handle(PlayCommand.Context context, PlaylistLoaded playlistLoaded) {
+        Optional<LinkContext> linkContext = linkContextRegistry.getCached(context.getGuild().getId().asLong());
+        if(linkContext.isEmpty()) throw new RuntimeException("LinkContext not found");//TODO proper exception
+
         Response shortPlaylistMessage = ShortPlaylistMessage.builder()
                 .query(context.getQuery())
                 .playlist(playlistLoaded)
@@ -34,7 +39,7 @@ public class PlaylistResultHandler implements LavalinkLoadResultHandler<Playlist
                 .onPlay(event ->
                         event.reply("Playing " + playlistLoaded.getTracks().size() + " tracks")
                                 .and(Mono.fromRunnable(() ->
-                                        linkContext.getTrackQueue().addAll(
+                                        linkContext.get().getTrackQueue().addAll(
                                                 TrackQueueElement.listOf(
                                                         playlistLoaded.getTracks(),
                                                         context.getEvent().getInteraction().getUser()
@@ -45,15 +50,29 @@ public class PlaylistResultHandler implements LavalinkLoadResultHandler<Playlist
                 .build()
                 .getMessage();
 
-        Mono<Void> playMono = Mono.empty();
-        if(playlistLoaded.getInfo().getSelectedTrack() != -1)
-            playMono = playTrackService.playTrack(
-                    context.getGuild(),
-                    context.getChannel(),
-                    context.getEvent().getInteraction(),
-                    playlistLoaded.getTracks().get(playlistLoaded.getInfo().getSelectedTrack()));
+        Track track;
+        if (playlistLoaded.getInfo().getSelectedTrack() != -1) {
+            track = playlistLoaded.getTracks().get(playlistLoaded.getInfo().getSelectedTrack());
+        }
+        else if(!playlistLoaded.getTracks().isEmpty()) {
+            track = playlistLoaded.getTracks().getFirst();
+        } else {
+            throw new RuntimeException("No tracks found in playlist");//TODO proper exception
+        }
 
-        return playMono.then(context.getEvent().createFollowup(shortPlaylistMessage.asFollowupSpec())
-                .flatMap(message -> shortPlaylistMessage.getResponseInteraction().get().interaction(message)));
+
+
+        return new ResultHandlerResponse(shortPlaylistMessage, track);
+//
+//        Mono<Void> playMono = Mono.empty();
+//        if(playlistLoaded.getInfo().getSelectedTrack() != -1)
+//            playMono = playTrackService.playTrack(
+//                    context.getGuild(),
+//                    context.getChannel(),
+//                    context.getEvent().getInteraction(),
+//                    playlistLoaded.getTracks().get(playlistLoaded.getInfo().getSelectedTrack()));
+//
+//        return playMono.then(context.getEvent().createFollowup(shortPlaylistMessage.asFollowupSpec())
+//                .flatMap(message -> shortPlaylistMessage.getResponseInteraction().get().interaction(message)));
     }
 }

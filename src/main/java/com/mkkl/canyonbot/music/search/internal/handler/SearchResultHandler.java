@@ -1,4 +1,4 @@
-package com.mkkl.canyonbot.music.services.search;
+package com.mkkl.canyonbot.music.search.internal.handler;
 
 import com.mkkl.canyonbot.music.commands.PlayCommand;
 import dev.arbjerg.lavalink.client.protocol.SearchResult;
@@ -11,8 +11,9 @@ public class SearchResultHandler implements LavalinkLoadResultHandler<SearchResu
     @Autowired
     private TrackResultHandler trackResultHandler;
     @Override
-    public Mono<?> handle(PlayCommand.Context context, SearchResult searchResult) {
-        return trackResultHandler.handleTrack(context, searchResult.getTracks()
-                .getFirst());
+    public ResultHandlerResponse handle(PlayCommand.Context context, SearchResult searchResult) {
+        //Assume the first track is the one we want
+        //In future we could show a list of tracks to choose from (probably not needed)
+        return trackResultHandler.handleTrack(context, searchResult.getTracks().getFirst());
     }
 }

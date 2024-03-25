@@ -3,22 +3,26 @@ package com.mkkl.canyonbot.music.commands;
 import com.mkkl.canyonbot.commands.BotCommand;
 import com.mkkl.canyonbot.commands.DefaultErrorHandler;
 import com.mkkl.canyonbot.commands.RegisterCommand;
-import com.mkkl.canyonbot.music.exceptions.LoadFailedException;
-import com.mkkl.canyonbot.music.exceptions.NoMatchException;
-import com.mkkl.canyonbot.music.exceptions.QueryNotFoundException;
-import com.mkkl.canyonbot.music.exceptions.SourceNotFoundException;
+import com.mkkl.canyonbot.music.exceptions.*;
 import com.mkkl.canyonbot.music.search.SourceRegistry;
+import com.mkkl.canyonbot.music.search.internal.handler.ResultHandlerResponse;
 import com.mkkl.canyonbot.music.search.internal.sources.SearchSource;
-import com.mkkl.canyonbot.music.services.search.PlaylistResultHandler;
-import com.mkkl.canyonbot.music.services.search.SearchResultHandler;
-import com.mkkl.canyonbot.music.services.search.SearchService;
-import com.mkkl.canyonbot.music.services.search.TrackResultHandler;
+import com.mkkl.canyonbot.music.search.internal.handler.PlaylistResultHandler;
+import com.mkkl.canyonbot.music.search.internal.handler.SearchResultHandler;
+import com.mkkl.canyonbot.music.services.ChannelConnectionService;
+import com.mkkl.canyonbot.music.services.PlayerService;
+import com.mkkl.canyonbot.music.services.SearchService;
+import com.mkkl.canyonbot.music.search.internal.handler.TrackResultHandler;
 import dev.arbjerg.lavalink.client.protocol.*;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
+import discord4j.core.object.VoiceState;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.command.ApplicationCommandOption;
+import discord4j.core.object.command.Interaction;
 import discord4j.core.object.entity.Guild;
+import discord4j.core.object.entity.PartialMember;
+import discord4j.core.object.entity.channel.AudioChannel;
 import discord4j.core.object.entity.channel.Channel;
 import discord4j.discordjson.json.ApplicationCommandOptionChoiceData;
 import discord4j.discordjson.json.ApplicationCommandOptionData;
@@ -28,6 +32,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+import reactor.function.TupleUtils;
 
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
@@ -35,7 +40,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
-//TODO refactoring needed, this class handles too many operations
 @RegisterCommand
 public class PlayCommand extends BotCommand {
     private final SearchService searchService;
@@ -43,12 +47,14 @@ public class PlayCommand extends BotCommand {
     private final PlaylistResultHandler playlistResultHandler;
     private final TrackResultHandler trackResultHandler;
     private final SearchResultHandler searchResultHandler;
+    private final PlayerService playerService;
+    private final ChannelConnectionService channelConnectionService;
 
     public PlayCommand(SearchService searchService,
                        SourceRegistry sourceRegistry,
                        DefaultErrorHandler errorHandler,
                        PlaylistResultHandler playlistResultHandler,
-                       TrackResultHandler trackResultHandler, SearchResultHandler searchResultHandler) {
+                       TrackResultHandler trackResultHandler, SearchResultHandler searchResultHandler, PlayerService playerService, ChannelConnectionService channelConnectionService) {
         super(ApplicationCommandRequest.builder()
                 .name("play")
                 .description("Play a song")
@@ -91,6 +97,8 @@ public class PlayCommand extends BotCommand {
         this.playlistResultHandler = playlistResultHandler;
         this.trackResultHandler = trackResultHandler;
         this.searchResultHandler = searchResultHandler;
+        this.playerService = playerService;
+        this.channelConnectionService = channelConnectionService;
     }
 
     @Override
@@ -125,7 +133,7 @@ public class PlayCommand extends BotCommand {
 
     private Mono<?> handleQuery(Context context) {
         return Mono.justOrEmpty(context.query)
-                .publishOn(Schedulers.boundedElastic())
+                .publishOn(Schedulers.boundedElastic())//to not use event threads TODO add scheduler just for play command?
                 .switchIfEmpty(Mono.error(new QueryNotFoundException(context.event.getInteraction())))
                 .zipWhen(query -> {
                     if (context.sourceId.isEmpty())
@@ -141,16 +149,26 @@ public class PlayCommand extends BotCommand {
 
                     return searchService.search(context.guild, query, searchSource);
                 })
-                .flatMap(tuple -> {
+                .flatMap(tuple -> {//TODO tuple utils
                     LavalinkLoadResult lavalinkLoadResult = tuple.getT2();
+                    //TODO get handlers from beans
                     return switch (lavalinkLoadResult) {
                         case LoadFailed loadFailed -> Mono.error(new LoadFailedException(tuple.getT1(), loadFailed.getException()));
-                        case PlaylistLoaded playlistLoaded -> playlistResultHandler.handle(context, playlistLoaded);
-                        case TrackLoaded trackLoaded -> trackResultHandler.handle(context, trackLoaded);
-                        case SearchResult searchResult -> searchResultHandler.handle(context, searchResult);
+                        case PlaylistLoaded playlistLoaded -> Mono.just(playlistResultHandler.handle(context, playlistLoaded));
+                        case TrackLoaded trackLoaded -> Mono.just(trackResultHandler.handle(context, trackLoaded));
+                        case SearchResult searchResult -> Mono.just(searchResultHandler.handle(context, searchResult));
                         default -> Mono.error(new NoMatchException(tuple.getT1()));
                     };
-                });
+                })
+                .flatMap(resultHandlerResponse ->
+                        Mono.fromRunnable(() -> enqueueTrack(playerService, context, resultHandlerResponse.getTrack()))
+                        .then(joinChannel(channelConnectionService, context))
+                        .then(playerService.beginPlayback(context.guild.getId().asLong()))
+                        .then(context.event.createFollowup(resultHandlerResponse.getResponse().asFollowupSpec())
+                                .filter(ignore -> resultHandlerResponse.getResponse().getResponseInteraction().isPresent())
+                                .flatMap(message -> resultHandlerResponse.getResponse().getResponseInteraction().get().interaction(message))
+                        )
+                );
     }
 
     private static Collection<ImmutableApplicationCommandOptionChoiceData> sourcesAsChoices(List<SearchSource> sources) {
@@ -162,6 +180,31 @@ public class PlayCommand extends BotCommand {
                     .build());
         }
         return choices;
+    }
+
+    //This method is not needed
+    private static void enqueueTrack(PlayerService playerService, Context context, Track track) {
+        playerService.addTrackToQueue(context.guild.getId().asLong(),
+                track,
+                context.event.getInteraction().getUser());
+    }
+
+    private static Mono<Void> joinChannel(ChannelConnectionService channelConnectionService, Context context) {
+        Interaction interaction = context.event.getInteraction();
+        return context.channel
+                //Check for audio channel caller is connected to
+                .switchIfEmpty(Mono.justOrEmpty(interaction.getMember())
+                        .switchIfEmpty(Mono.error(new MemberNotFoundException(interaction)))
+                        .flatMap(PartialMember::getVoiceState)
+                        .flatMap(VoiceState::getChannel)
+                        //Check if audio channel was found, else throw exception
+                        .switchIfEmpty(Mono.error(new ChannelNotFoundException(interaction))))
+                .flatMap(channel -> {
+                    if (!(channel instanceof AudioChannel))
+                        return Mono.error(new InvalidAudioChannelException(interaction));
+                    return Mono.just((AudioChannel) channel);
+                })
+                .flatMap(channelConnectionService::join);
     }
 
 

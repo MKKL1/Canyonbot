@@ -1,5 +1,6 @@
 package com.mkkl.canyonbot.music.services;
 
+import com.mkkl.canyonbot.music.VoiceConnectionRegistry;
 import dev.arbjerg.lavalink.libraries.discord4j.Discord4JUtils;
 import discord4j.common.util.Snowflake;
 import discord4j.core.GatewayDiscordClient;
@@ -11,16 +12,22 @@ import reactor.core.publisher.Mono;
 public class ChannelConnectionService {
 
     private final GatewayDiscordClient gatewayDiscordClient;
+    private final VoiceConnectionRegistry voiceConnectionRegistry;
 
-    public ChannelConnectionService(GatewayDiscordClient gatewayDiscordClient) {
+    public ChannelConnectionService(GatewayDiscordClient gatewayDiscordClient, VoiceConnectionRegistry voiceConnectionRegistry) {
         this.gatewayDiscordClient = gatewayDiscordClient;
+        this.voiceConnectionRegistry = voiceConnectionRegistry;
     }
 
     public Mono<Void> join(AudioChannel audioChannel) {
-        return audioChannel.sendConnectVoiceState(false, false);
+        return Mono.fromCallable(() -> voiceConnectionRegistry.isSet(audioChannel.getGuildId().asLong()))
+                .filter(isSet -> !isSet)
+                .flatMap(ignore -> audioChannel.sendConnectVoiceState(false, false))
+                .then(Mono.fromRunnable(() -> voiceConnectionRegistry.remove(audioChannel.getGuildId().asLong())));
     }
 
     public Mono<Void> leave(Snowflake guildId) {
-        return Discord4JUtils.leave(gatewayDiscordClient, guildId);
+        return Discord4JUtils.leave(gatewayDiscordClient, guildId)
+                .then(Mono.fromRunnable(() -> voiceConnectionRegistry.remove(guildId.asLong())));
     }
 }

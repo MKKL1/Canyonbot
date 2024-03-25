@@ -74,6 +74,9 @@ public class TrackScheduler {
                 .flatMap(trackQueueElement -> link.getPlayer().flatMap(player -> player.setTrack(trackQueueElement.getTrack())));
     }
 
+    public Mono<Void> pause() {
+        return Mono.empty(); //TODO implement
+    }
 
 
     public enum State {
