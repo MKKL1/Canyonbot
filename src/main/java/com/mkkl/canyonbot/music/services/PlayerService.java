@@ -1,24 +1,18 @@
 package com.mkkl.canyonbot.music.services;
 
 import com.mkkl.canyonbot.music.VoiceConnectionRegistry;
-import com.mkkl.canyonbot.music.exceptions.ChannelNotFoundException;
-import com.mkkl.canyonbot.music.exceptions.InvalidAudioChannelException;
-import com.mkkl.canyonbot.music.exceptions.MemberNotFoundException;
 import com.mkkl.canyonbot.music.player.LinkContext;
 import com.mkkl.canyonbot.music.player.LinkContextRegistry;
 import com.mkkl.canyonbot.music.player.TrackScheduler;
 import com.mkkl.canyonbot.music.player.queue.TrackQueue;
 import com.mkkl.canyonbot.music.player.queue.TrackQueueElement;
 import dev.arbjerg.lavalink.client.protocol.Track;
-import discord4j.core.object.VoiceState;
-import discord4j.core.object.command.Interaction;
-import discord4j.core.object.entity.Guild;
-import discord4j.core.object.entity.PartialMember;
+import dev.arbjerg.lavalink.libraries.discord4j.Discord4JUtils;
+import discord4j.common.util.Snowflake;
+import discord4j.core.GatewayDiscordClient;
 import discord4j.core.object.entity.User;
 import discord4j.core.object.entity.channel.AudioChannel;
-import discord4j.core.object.entity.channel.Channel;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
@@ -29,9 +23,13 @@ import java.util.Optional;
 @Service
 public class PlayerService {
     private final LinkContextRegistry linkContextRegistry;
+    private final VoiceConnectionRegistry voiceConnectionRegistry;
+    private final GatewayDiscordClient gatewayDiscordClient;
 
-    public PlayerService(LinkContextRegistry linkContextRegistry) {
+    public PlayerService(LinkContextRegistry linkContextRegistry, VoiceConnectionRegistry voiceConnectionRegistry, GatewayDiscordClient gatewayDiscordClient) {
         this.linkContextRegistry = linkContextRegistry;
+        this.voiceConnectionRegistry = voiceConnectionRegistry;
+        this.gatewayDiscordClient = gatewayDiscordClient;
     }
 
     public boolean addTrackToQueue(long guildId, Track track, User user) {
@@ -70,6 +68,21 @@ public class PlayerService {
         Optional<LinkContext> cached = linkContextRegistry.getCached(guildId);
         if(cached.isEmpty()) throw new IllegalStateException("LinkContext for this guild is undefined");
         return cached.get().getTrackQueue();
+    }
+
+    public Mono<Void> join(AudioChannel audioChannel) {
+        return Mono.fromCallable(() -> voiceConnectionRegistry.isSet(audioChannel.getGuildId().asLong())) //TODO check if we can skip sending voicestate if we are already connected
+                    .filter(isSet -> !isSet)
+                    .flatMap(ignore -> audioChannel.sendConnectVoiceState(false, false));
+    }
+
+    public Mono<Void> leaveChannel(Snowflake guildId) {
+        return Discord4JUtils.leave(gatewayDiscordClient, guildId);
+    }
+
+    //it is done automatically when bot disconnects from channel
+    public Mono<Void> destroyLinkContext(long guildId) {
+        return linkContextRegistry.destroy(guildId).then(Mono.fromRunnable(() -> log.info("Destroyed link context")));
     }
 
 }

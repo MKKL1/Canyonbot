@@ -19,7 +19,7 @@ public class CommandRegistry {
         this.commandRegistrarFactory = commandRegistrarFactory;
         this.commandsByName = new HashMap<>();
         this.autoCompleteCommandsByName = new HashMap<>();
-        Map<String,Object> commandBeans = context.getBeansWithAnnotation(RegisterCommand.class);
+        Map<String,Object> commandBeans = context.getBeansWithAnnotation(DiscordCommand.class);
         for (Map.Entry<String, Object> entry : commandBeans.entrySet()) {
             if (entry.getValue() instanceof BotCommand command) {
                 add(command);

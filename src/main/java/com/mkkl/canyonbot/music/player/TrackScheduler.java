@@ -1,7 +1,7 @@
 package com.mkkl.canyonbot.music.player;
 
 import com.mkkl.canyonbot.event.EventDispatcher;
-import com.mkkl.canyonbot.music.player.event.MayStopPlayerEvent;
+import com.mkkl.canyonbot.music.player.event.MayDestroyPlayerEvent;
 import com.mkkl.canyonbot.music.player.event.lavalink.player.PlayerTrackEndEvent;
 import com.mkkl.canyonbot.music.player.event.scheduler.QueueEmptyEvent;
 import com.mkkl.canyonbot.music.player.queue.TrackQueue;
@@ -11,21 +11,27 @@ import dev.arbjerg.lavalink.client.Link;
 import jakarta.annotation.Nullable;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.Disposable;
 import reactor.core.publisher.Mono;
 
 @Slf4j
-@Getter
-public class TrackScheduler {
+public class TrackScheduler implements Disposable{
     @Nullable
+    @Getter
     private TrackQueueElement currentTrack = null;
+    @Getter
     private State state = State.STOPPED;
+    @Getter
     private final TrackQueue trackQueue;
+    @Getter
     private final Link link;
-    //It is only needed in constructor so should I just pass it as a parameter?
+
+    private final Disposable playerTrackEndEventSub;
     public TrackScheduler(TrackQueue trackQueue, Link link, long guildId, EventDispatcher eventDispatcher) {
         this.link = link;
         this.trackQueue = trackQueue;
-        eventDispatcher.on(PlayerTrackEndEvent.class)
+
+        playerTrackEndEventSub = eventDispatcher.on(PlayerTrackEndEvent.class)
                 .filter(trackEndEvent -> trackEndEvent.getReason().getMayStartNext())
                 .flatMap(trackEndEvent ->
                         //May play next
@@ -33,13 +39,13 @@ public class TrackScheduler {
                             //Queue empty
                             state = State.STOPPED;
                             eventDispatcher.publish(new QueueEmptyEvent(guildId, trackQueue));
-                            eventDispatcher.publish(new MayStopPlayerEvent(guildId));
+                            eventDispatcher.publish(new MayDestroyPlayerEvent(guildId));
                         })))
                 .switchIfEmpty(Mono.fromRunnable(() -> {
                     //Cannot play next
                     state = State.STOPPED;
                     currentTrack = null;
-                    eventDispatcher.publish(new MayStopPlayerEvent(guildId));
+                    eventDispatcher.publish(new MayDestroyPlayerEvent(guildId));
                 })).subscribe();
     }
 
@@ -71,13 +77,23 @@ public class TrackScheduler {
     private Mono<LavalinkPlayer> playNext() {
         return Mono.fromCallable(trackQueue::dequeue)
                 .doOnNext(trackQueueElement -> currentTrack = trackQueueElement)
-                .flatMap(trackQueueElement -> link.getPlayer().flatMap(player -> player.setTrack(trackQueueElement.getTrack())));
+                .flatMap(trackQueueElement -> link.createOrUpdatePlayer().setTrack(trackQueueElement.getTrack()));
+        //TODO play next track event
     }
 
     public Mono<Void> pause() {
         return Mono.empty(); //TODO implement
     }
 
+    @Override
+    public void dispose() {
+        playerTrackEndEventSub.dispose();
+    }
+
+    @Override
+    public boolean isDisposed() {
+        return playerTrackEndEventSub.isDisposed();
+    }
 
     public enum State {
         PLAYING,

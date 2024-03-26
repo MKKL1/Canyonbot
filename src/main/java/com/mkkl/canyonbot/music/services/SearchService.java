@@ -19,10 +19,11 @@ public class SearchService {
 
     //TODO retry with youtube search if search with link didn't work
     public Mono<LavalinkLoadResult> search(Guild guild, String identifier) {
+        //TODO searching doesn't need whole LinkContext, just normal Link. It is possible that this Link won't be cleaned up
         return lavalinkClient.getOrCreateLink(guild.getId().asLong())
                 .loadItem(identifier)
                 .doOnNext(lavalinkLoadResult ->
-                        log.info("[g:" + guild.getId().asLong() + "] Search: " + identifier));
+                        log.info("[g:" + guild.getId().asLong() + "] Search: " + identifier + " result: " + lavalinkLoadResult));
     }
 
     public Mono<LavalinkLoadResult> search(Guild guild, String identifier, SearchSource searchSource) {

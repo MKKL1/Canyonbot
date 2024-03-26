@@ -23,6 +23,7 @@ public class LinkContext {
 
     //TODO when this method is called, it is not removed from registry
     public Mono<Void> destroy() {
-        return link.destroy().then();
+        return link.destroy()
+                .then(Mono.fromRunnable(trackScheduler::dispose));
     }
 }

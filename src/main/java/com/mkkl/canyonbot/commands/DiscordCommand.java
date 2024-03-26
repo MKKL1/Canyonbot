@@ -7,5 +7,5 @@ import java.lang.annotation.RetentionPolicy;
 
 @Component
 @Retention(RetentionPolicy.RUNTIME)
-public @interface RegisterCommand {
+public @interface DiscordCommand {
 }

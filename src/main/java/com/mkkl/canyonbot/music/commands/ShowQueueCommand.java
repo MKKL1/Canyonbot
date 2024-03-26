@@ -2,7 +2,7 @@ package com.mkkl.canyonbot.music.commands;
 
 import com.mkkl.canyonbot.commands.BotCommand;
 import com.mkkl.canyonbot.commands.DefaultErrorHandler;
-import com.mkkl.canyonbot.commands.RegisterCommand;
+import com.mkkl.canyonbot.commands.DiscordCommand;
 import com.mkkl.canyonbot.commands.exceptions.BotExternalException;
 import com.mkkl.canyonbot.discord.response.Response;
 import com.mkkl.canyonbot.music.messages.generators.QueueMessage;
@@ -22,7 +22,7 @@ import reactor.core.publisher.Mono;
 import java.util.Objects;
 import java.util.Optional;
 
-@RegisterCommand
+@DiscordCommand
 public class ShowQueueCommand extends BotCommand {
     public static final int ELEMENTS_PER_PAGE = 20; //TODO this may be command option
     public static final String PAGE_OPTION_NAME = "page";

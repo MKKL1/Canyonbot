@@ -6,8 +6,10 @@ import dev.arbjerg.lavalink.client.TrackEndEvent;
 import dev.arbjerg.lavalink.client.protocol.Track;
 import dev.arbjerg.lavalink.protocol.v4.Message;
 import lombok.Getter;
+import lombok.ToString;
 
 @Getter
+@ToString
 public class PlayerTrackEndEvent implements PlayerEvent {
     private final LavalinkNode node;
     private final long guildId;

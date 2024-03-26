@@ -2,14 +2,12 @@ package com.mkkl.canyonbot.music.commands;
 
 import com.mkkl.canyonbot.commands.BotCommand;
 import com.mkkl.canyonbot.commands.DefaultErrorHandler;
-import com.mkkl.canyonbot.commands.RegisterCommand;
+import com.mkkl.canyonbot.commands.DiscordCommand;
 import com.mkkl.canyonbot.music.exceptions.*;
 import com.mkkl.canyonbot.music.search.SourceRegistry;
-import com.mkkl.canyonbot.music.search.internal.handler.ResultHandlerResponse;
 import com.mkkl.canyonbot.music.search.internal.sources.SearchSource;
 import com.mkkl.canyonbot.music.search.internal.handler.PlaylistResultHandler;
 import com.mkkl.canyonbot.music.search.internal.handler.SearchResultHandler;
-import com.mkkl.canyonbot.music.services.ChannelConnectionService;
 import com.mkkl.canyonbot.music.services.PlayerService;
 import com.mkkl.canyonbot.music.services.SearchService;
 import com.mkkl.canyonbot.music.search.internal.handler.TrackResultHandler;
@@ -32,7 +30,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
-import reactor.function.TupleUtils;
 
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
@@ -40,7 +37,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
-@RegisterCommand
+@DiscordCommand
 public class PlayCommand extends BotCommand {
     private final SearchService searchService;
     private final SourceRegistry sourceRegistry;
@@ -48,13 +45,12 @@ public class PlayCommand extends BotCommand {
     private final TrackResultHandler trackResultHandler;
     private final SearchResultHandler searchResultHandler;
     private final PlayerService playerService;
-    private final ChannelConnectionService channelConnectionService;
 
     public PlayCommand(SearchService searchService,
                        SourceRegistry sourceRegistry,
                        DefaultErrorHandler errorHandler,
                        PlaylistResultHandler playlistResultHandler,
-                       TrackResultHandler trackResultHandler, SearchResultHandler searchResultHandler, PlayerService playerService, ChannelConnectionService channelConnectionService) {
+                       TrackResultHandler trackResultHandler, SearchResultHandler searchResultHandler, PlayerService playerService) {
         super(ApplicationCommandRequest.builder()
                 .name("play")
                 .description("Play a song")
@@ -98,7 +94,6 @@ public class PlayCommand extends BotCommand {
         this.trackResultHandler = trackResultHandler;
         this.searchResultHandler = searchResultHandler;
         this.playerService = playerService;
-        this.channelConnectionService = channelConnectionService;
     }
 
     @Override
@@ -161,8 +156,9 @@ public class PlayCommand extends BotCommand {
                     };
                 })
                 .flatMap(resultHandlerResponse ->
+                        //TODO if something here fails, like for example joining channel doesn't work, track is still added to queue. Find a way to fix it
                         Mono.fromRunnable(() -> enqueueTrack(playerService, context, resultHandlerResponse.getTrack()))
-                        .then(joinChannel(channelConnectionService, context))
+                        .then(joinChannel(playerService, context))
                         .then(playerService.beginPlayback(context.guild.getId().asLong()))
                         .then(context.event.createFollowup(resultHandlerResponse.getResponse().asFollowupSpec())
                                 .filter(ignore -> resultHandlerResponse.getResponse().getResponseInteraction().isPresent())
@@ -189,7 +185,7 @@ public class PlayCommand extends BotCommand {
                 context.event.getInteraction().getUser());
     }
 
-    private static Mono<Void> joinChannel(ChannelConnectionService channelConnectionService, Context context) {
+    private static Mono<Void> joinChannel(PlayerService playerService, Context context) {
         Interaction interaction = context.event.getInteraction();
         return context.channel
                 //Check for audio channel caller is connected to
@@ -204,7 +200,7 @@ public class PlayCommand extends BotCommand {
                         return Mono.error(new InvalidAudioChannelException(interaction));
                     return Mono.just((AudioChannel) channel);
                 })
-                .flatMap(channelConnectionService::join);
+                .flatMap(playerService::join);
     }
 
 

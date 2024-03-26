@@ -4,9 +4,9 @@ import com.mkkl.canyonbot.event.GuildEvent;
 import lombok.Getter;
 
 @Getter
-public class MayStopPlayerEvent implements GuildEvent {
+public class MayDestroyPlayerEvent implements GuildEvent {
     private final long guildId;
-    public MayStopPlayerEvent(long guildId) {
+    public MayDestroyPlayerEvent(long guildId) {
         this.guildId = guildId;
     }
 }

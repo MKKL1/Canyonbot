@@ -21,20 +21,20 @@ public class LinkContextRegistry {
     private final Map<Long, LinkContext> linkContextMap = new ConcurrentHashMap<>();
     private final EventDispatcher eventDispatcher;
 
-    public LinkContextRegistry(LavalinkClient lavalinkClient, EventDispatcher eventDispatcher, GatewayDiscordClient gatewayDiscordClient) {
+    public LinkContextRegistry(LavalinkClient lavalinkClient, EventDispatcher eventDispatcher) {
         this.lavalinkClient = lavalinkClient;
         this.eventDispatcher = eventDispatcher;
     }
 
     public LinkContext getOrCreate(long guildId) {
-        //TODO move this to a factory
+        //TODO move this to a factory?
         //TODO handle no lavalink nodes available
         if(lavalinkClient.getNodes().isEmpty()) throw new RuntimeException("No lavalink nodes!");
-        LinkContext linkContext = linkContextMap.computeIfAbsent(guildId,
-                g -> new LinkContext(g, lavalinkClient.getOrCreateLink(g), eventDispatcher)
-        );
-        eventDispatcher.publish(new LinkContextCreationEvent(guildId));
-        return linkContext;
+        return linkContextMap.computeIfAbsent(guildId, g -> {
+                    eventDispatcher.publish(new LinkContextCreationEvent(guildId));
+                    log.info("LinkContext created for guild: " + guildId);
+                    return new LinkContext(g, lavalinkClient.getOrCreateLink(g), eventDispatcher);
+                });
     }
 
     public Optional<LinkContext> getCached(long guildId) {
@@ -45,9 +45,8 @@ public class LinkContextRegistry {
         return linkContextMap.containsKey(guildId);
     }
     public Mono<Void> destroy(long guildId) {
-        return Optional.ofNullable(linkContextMap.remove(guildId))
-                .map(LinkContext::destroy)
-                .orElse(Mono.empty())
+        return Mono.fromCallable(() -> linkContextMap.remove(guildId))
+                .flatMap(LinkContext::destroy)
                 .then(Mono.fromRunnable(() -> eventDispatcher.publish(new LinkContextDestroyEvent(guildId))));
     }
 }

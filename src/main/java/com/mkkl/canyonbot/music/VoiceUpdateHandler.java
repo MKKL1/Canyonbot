@@ -3,11 +3,13 @@ package com.mkkl.canyonbot.music;
 import com.mkkl.canyonbot.commands.exceptions.BotInternalException;
 import com.mkkl.canyonbot.music.player.LinkContext;
 import com.mkkl.canyonbot.music.player.LinkContextRegistry;
+import com.mkkl.canyonbot.music.services.PlayerService;
 import dev.arbjerg.lavalink.client.LavalinkClient;
 import dev.arbjerg.lavalink.client.LavalinkPlayer;
 import dev.arbjerg.lavalink.client.Link;
 import dev.arbjerg.lavalink.client.LinkState;
 import dev.arbjerg.lavalink.client.loadbalancing.VoiceRegion;
+import dev.arbjerg.lavalink.libraries.discord4j.D4JVoiceHandler;
 import dev.arbjerg.lavalink.protocol.v4.PlayerState;
 import dev.arbjerg.lavalink.protocol.v4.VoiceState;
 import discord4j.core.GatewayDiscordClient;
@@ -25,14 +27,20 @@ import java.util.Optional;
 @Component
 public class VoiceUpdateHandler {
 
-    public VoiceUpdateHandler(GatewayDiscordClient gateway, LavalinkClient lavalinkClient, LinkContextRegistry linkContextRegistry, VoiceConnectionRegistry voiceConnectionRegistry) {
-        Mono<Void> voiceStateUpdate = gateway.on(VoiceStateUpdateEvent.class)
-                .flatMap(event -> {
+    public VoiceUpdateHandler(GatewayDiscordClient gateway, LavalinkClient lavalinkClient, LinkContextRegistry linkContextRegistry, VoiceConnectionRegistry voiceConnectionRegistry, PlayerService playerService) {
+        Mono<Void> voiceStateUpdate = gateway.on(VoiceStateUpdateEvent.class, event -> {
+                    //TODO process event reactively
                     discord4j.core.object.VoiceState update = event.getCurrent();
                     if (!update.getUserId().equals(update.getClient().getSelfId()))
                         return Mono.empty();
 
                     long guildId = update.getGuildId().asLong();
+
+                    if(update.getChannelId().isEmpty()) {
+                        voiceConnectionRegistry.remove(guildId);
+                    } else {
+                        voiceConnectionRegistry.set(guildId);
+                    }
 
                     Optional<LinkContext> linkContextOptional = linkContextRegistry.getCached(update.getGuildId().asLong());
 
@@ -51,19 +59,19 @@ public class VoiceUpdateHandler {
 
                     if (update.getChannelId().isEmpty() && playerState.getConnected()) {
                         link.setState$lavalink_client(LinkState.DISCONNECTED);
-                        voiceConnectionRegistry.remove(guildId);
-                        return linkContextRegistry.destroy(guildId);
+                        return playerService.destroyLinkContext(guildId);
                     } else {
-                        voiceConnectionRegistry.set(guildId);
                         link.setState$lavalink_client(LinkState.CONNECTED);
                         return Mono.empty();
                     }
+
+                })
+                .onErrorResume(RuntimeException.class, throwable -> {
+                    log.error(throwable.getMessage());
+                    return Mono.empty();
                 }).then();
 
-        Mono<Void> voiceServerUpdate = gateway.getEventDispatcher()
-                .on(VoiceServerUpdateEvent.class)
-                .next()
-                .flatMap(event -> {
+        Mono<Void> voiceServerUpdate = gateway.on(VoiceServerUpdateEvent.class, event -> {
                     VoiceState voiceState = new VoiceState(
                             event.getToken(),
                             Objects.requireNonNull(event.getEndpoint()),
@@ -71,16 +79,17 @@ public class VoiceUpdateHandler {
                     Link link = lavalinkClient.getOrCreateLink(
                             event.getGuildId().asLong(),
                             VoiceRegion.fromEndpoint(Objects.requireNonNull(event.getEndpoint())));
+                    log.info("voiceServerUpdate");
                     link.onVoiceServerUpdate(voiceState);
+                    return Mono.empty();
+                })
+                .onErrorResume(RuntimeException.class, throwable -> {
+                    log.error(throwable.getMessage());
                     return Mono.empty();
                 }).then();
 
-        voiceStateUpdate.and(voiceServerUpdate)
-                .doOnError(VoiceUpdateHandler.VoiceUpdateHandlerException.class,
-                        throwable -> log.error("guild:" + throwable.getGuildId() + " " + throwable.getMessage()))
-                .onErrorResume(VoiceUpdateHandler.VoiceUpdateHandlerException.class, throwable -> Mono.empty())
+        Mono.when(voiceStateUpdate, voiceServerUpdate)
                 .subscribe();
-
 
     }
 

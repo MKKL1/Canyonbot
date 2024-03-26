@@ -60,6 +60,7 @@ public class ClientConfiguration {
                 .setPassword("youshallnotpass")
                 .setHttpTimeout(5000L)
                 .build());
+        //TODO causes exception reactor.core.publisher.Sinks$EmissionException: Spec. Rule 1.3 - onSubscribe, onNext, onError and onComplete signaled to a Subscriber MUST be signaled serially.
         client.on(ClientEvent.class).subscribe(event -> eventDispatcher.publish(LavalinkEventAdapter.get(event)));
         return client;
 
