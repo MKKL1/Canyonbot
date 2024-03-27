@@ -4,6 +4,8 @@ import jakarta.annotation.Nullable;
 
 import java.util.Collection;
 
+//TODO observe changes and publish queue change event
+
 //Represents a collection of tracks to be played
 public interface TrackQueue extends Collection<TrackQueueElement> {
     @Nullable

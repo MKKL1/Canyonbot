@@ -3,7 +3,9 @@ package com.mkkl.canyonbot.music.commands;
 import com.mkkl.canyonbot.commands.BotCommand;
 import com.mkkl.canyonbot.commands.DefaultErrorHandler;
 import com.mkkl.canyonbot.commands.DiscordCommand;
+import com.mkkl.canyonbot.commands.exceptions.BotInternalException;
 import com.mkkl.canyonbot.music.services.PlayerService;
+import discord4j.common.util.Snowflake;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import reactor.core.publisher.Mono;
@@ -21,12 +23,10 @@ public class StopCommand extends BotCommand {
 
     @Override
     public Mono<Void> execute(ChatInputInteractionEvent event) {
-        return event.getInteraction()
-                .getGuild()
-                //TODO there is no check for player not being used at all at given guild
-                // it could lead to unnecessary resource usage
-                .flatMap(guild -> playerService.stopPlayback(guild.getId().asLong()))
-                .then(event.reply("Disconnected"));
+        return Mono.defer(() -> Mono.justOrEmpty(event.getInteraction().getGuildId()))
+                .switchIfEmpty(Mono.error(new BotInternalException("GuildId was undefined")))
+                .flatMap(playerService::leaveChannel)
+                .then(Mono.defer(() -> event.reply("Disconnecting")));
     }
 
 }

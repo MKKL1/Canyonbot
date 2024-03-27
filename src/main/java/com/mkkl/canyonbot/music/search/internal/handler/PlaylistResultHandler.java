@@ -24,13 +24,10 @@ public class PlaylistResultHandler implements LavalinkLoadResultHandler<Playlist
     @Autowired
     private GatewayDiscordClient gateway;
     @Autowired
-    private LinkContextRegistry linkContextRegistry;
+    private PlayerService playerService;
 
     @Override
     public ResultHandlerResponse handle(PlayCommand.Context context, PlaylistLoaded playlistLoaded) {
-        Optional<LinkContext> linkContext = linkContextRegistry.getCached(context.getGuild().getId().asLong());
-        if(linkContext.isEmpty()) throw new RuntimeException("LinkContext not found");//TODO proper exception
-
         Response shortPlaylistMessage = ShortPlaylistMessage.builder()
                 .query(context.getQuery())
                 .playlist(playlistLoaded)
@@ -39,7 +36,7 @@ public class PlaylistResultHandler implements LavalinkLoadResultHandler<Playlist
                 .onPlay(event ->
                         event.reply("Playing " + playlistLoaded.getTracks().size() + " tracks")
                                 .and(Mono.fromRunnable(() ->
-                                        linkContext.get().getTrackQueue().addAll(
+                                        playerService.addTracksToQueue(context.getGuild().getId().asLong(),
                                                 TrackQueueElement.listOf(
                                                         playlistLoaded.getTracks(),
                                                         context.getEvent().getInteraction().getUser()

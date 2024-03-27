@@ -4,10 +4,14 @@ import com.mkkl.canyonbot.commands.BotCommand;
 import com.mkkl.canyonbot.commands.DefaultErrorHandler;
 import com.mkkl.canyonbot.commands.DiscordCommand;
 import com.mkkl.canyonbot.commands.exceptions.BotExternalException;
+import com.mkkl.canyonbot.commands.exceptions.BotInternalException;
 import com.mkkl.canyonbot.discord.response.Response;
 import com.mkkl.canyonbot.music.messages.generators.QueueMessage;
 import com.mkkl.canyonbot.music.player.LinkContext;
 import com.mkkl.canyonbot.music.player.LinkContextRegistry;
+import com.mkkl.canyonbot.music.player.queue.TrackQueueInfo;
+import com.mkkl.canyonbot.music.services.PlayerService;
+import discord4j.common.util.Snowflake;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
@@ -28,9 +32,9 @@ public class ShowQueueCommand extends BotCommand {
     public static final String PAGE_OPTION_NAME = "page";
     public static final int FIRST_PAGE = 1;
     private final GatewayDiscordClient gateway;
-    private final LinkContextRegistry linkContextRegistry;
+    private final PlayerService playerService;
 
-    protected ShowQueueCommand(DefaultErrorHandler errorHandler, GatewayDiscordClient gateway, LinkContextRegistry linkContextRegistry) {
+    protected ShowQueueCommand(DefaultErrorHandler errorHandler, GatewayDiscordClient gateway, PlayerService playerService) {
         super(ApplicationCommandRequest.builder()
                 .name("queue")
                 .description("Shows the current queue")
@@ -42,22 +46,23 @@ public class ShowQueueCommand extends BotCommand {
                         .build())
                 .build(), errorHandler);
         this.gateway = gateway;
-        this.linkContextRegistry = linkContextRegistry;
+        this.playerService = playerService;
     }
 
     @Override
     public Mono<Void> execute(ChatInputInteractionEvent event) {
-        return event.getInteraction().getGuild()
-                .filter(guild -> linkContextRegistry.isCached(guild.getId().asLong()))
-                .switchIfEmpty(Mono.error(new BotExternalException("Queue is empty")))
+        return Mono.defer(() -> Mono.justOrEmpty(event.getInteraction().getGuildId()))
+                .switchIfEmpty(Mono.error(new BotInternalException("GuildId was undefined")))
+                .map(Snowflake::asLong)
                 .flatMap(guild -> Mono.just(new Parameters(guild, event.getInteraction().getCommandInteraction()
                         .flatMap(aci -> aci.getOption(PAGE_OPTION_NAME))
                         .flatMap(ApplicationCommandInteractionOption::getValue)
                         .map(ApplicationCommandInteractionOptionValue::asLong))))
                 .flatMap(parameters -> {
-                    LinkContext linkContext = linkContextRegistry.getCached(parameters.guild.getId().asLong()).get();
+                    //TODO handle exception caused by linkcontext being undefined for guild
+                    TrackQueueInfo trackQueueInfo = playerService.getTrackQueueInfo(parameters.guild);
                     long page = FIRST_PAGE;
-                    long maxPage = (long) Math.floor(((float) linkContext.getTrackQueue().size() / ELEMENTS_PER_PAGE) + 1);
+                    long maxPage = (long) Math.floor(((float) trackQueueInfo.getTrackQueue().size() / ELEMENTS_PER_PAGE) + 1);
                     if (parameters.page.isPresent()) {
                         page = parameters.page.get();
                         if (page < FIRST_PAGE) page = FIRST_PAGE;
@@ -67,12 +72,12 @@ public class ShowQueueCommand extends BotCommand {
                     QueueMessage.Builder builder = QueueMessage.builder()
                             .gateway(gateway)
                             .caller(event.getInteraction().getUser())
-                            .currentTrack(linkContext.getTrackScheduler().getCurrentTrack())
+                            .currentTrack(trackQueueInfo.getCurrentTrack())
                             .elementsPerPage(ELEMENTS_PER_PAGE)
                             .maxPages(maxPage)
                             .page(page);
 
-                    builder.queueIterator(Objects.requireNonNull(linkContext.getTrackQueue().iterator()));
+                    builder.queueIterator(Objects.requireNonNull(trackQueueInfo.getTrackQueue().iterator()));
                     Response response = builder.build().getMessage();
 
                     return event.reply(response.asCallbackSpec())
@@ -83,34 +88,9 @@ public class ShowQueueCommand extends BotCommand {
                 .then();
     }
 
-//    private Tuple2<ResponseMessageData, Long> createResponse(ChatInputInteractionEvent event, Parameters parameters) {
-//        QueueMessage.Builder builder = QueueMessage.builder();
-//
-//        if (guildTrackQueueService.isPresent(parameters.guild))
-//            builder.queueIterator(Objects.requireNonNull(guildTrackQueueService.iterator(parameters.guild)));
-//
-//        long page = FIRST_PAGE;
-//        long maxPage = (long) Math.floor(((float) guildTrackQueueService.size(parameters.guild) / ELEMENTS_PER_PAGE) + 1);
-//        if (parameters.page.isPresent()) {
-//            page = parameters.page.get();
-//            if (page < FIRST_PAGE) page = FIRST_PAGE;
-//            else if (page > maxPage) page = maxPage;
-//        }
-//
-//        return Tuples.of(builder
-//                .page(page)
-//                .maxPages(maxPage)
-//                .elementsPerPage(ELEMENTS_PER_PAGE)
-//                .caller(event.getInteraction()
-//                        .getUser())
-//                .currentTrack(guildTrackSchedulerService.getCurrentTrack(parameters.guild))
-//                .nextPageButton(nextPageButton)
-//                .build().getMessage(), page);
-//    }
-
     @AllArgsConstructor
     private static class Parameters {
-        private Guild guild;
+        private long guild;
         private Optional<Long> page;
     }
 }

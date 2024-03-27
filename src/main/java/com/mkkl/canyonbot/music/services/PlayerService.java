@@ -6,6 +6,7 @@ import com.mkkl.canyonbot.music.player.LinkContextRegistry;
 import com.mkkl.canyonbot.music.player.TrackScheduler;
 import com.mkkl.canyonbot.music.player.queue.TrackQueue;
 import com.mkkl.canyonbot.music.player.queue.TrackQueueElement;
+import com.mkkl.canyonbot.music.player.queue.TrackQueueInfo;
 import dev.arbjerg.lavalink.client.protocol.Track;
 import dev.arbjerg.lavalink.libraries.discord4j.Discord4JUtils;
 import discord4j.common.util.Snowflake;
@@ -16,6 +17,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 //TODO cleanup of player on correct event
@@ -30,11 +34,6 @@ public class PlayerService {
         this.linkContextRegistry = linkContextRegistry;
         this.voiceConnectionRegistry = voiceConnectionRegistry;
         this.gatewayDiscordClient = gatewayDiscordClient;
-    }
-
-    public boolean addTrackToQueue(long guildId, Track track, User user) {
-        LinkContext linkContext = linkContextRegistry.getOrCreate(guildId);
-        return linkContext.getTrackQueue().add(new TrackQueueElement(track, user));
     }
 
     public Mono<Void> beginPlayback(long guildId) {
@@ -57,6 +56,23 @@ public class PlayerService {
                 .flatMap(linkContext -> linkContext.getTrackScheduler().pause());
     }
 
+    //TODO move it to queue service?
+    public Mono<TrackQueueElement> skipTrack(long guildId) {
+        return Mono.justOrEmpty(linkContextRegistry.getCached(guildId))
+                .switchIfEmpty(Mono.error(new IllegalStateException("LinkContext for this guild is undefined")))
+                .flatMap(linkContext -> linkContext.getTrackScheduler().skip());
+    }
+
+    public boolean addTrackToQueue(long guildId, Track track, User user) {
+        LinkContext linkContext = linkContextRegistry.getOrCreate(guildId);
+        return linkContext.getTrackQueue().add(new TrackQueueElement(track, user));
+    }
+
+    public boolean addTracksToQueue(long guildId, Collection<TrackQueueElement> trackQueueElements) {
+        LinkContext linkContext = linkContextRegistry.getOrCreate(guildId);
+        return linkContext.getTrackQueue().addAll(trackQueueElements);
+    }
+
     public void shuffleQueue(long guildId) {
         Optional<LinkContext> cached = linkContextRegistry.getCached(guildId);
         if(cached.isEmpty()) throw new IllegalStateException("LinkContext for this guild is undefined");
@@ -64,10 +80,15 @@ public class PlayerService {
     }
 
     //Not sure if it is good idea to return track queue instance
-    public TrackQueue getTrackQueue(long guildId) {
+    public TrackQueueInfo getTrackQueueInfo(long guildId) {
         Optional<LinkContext> cached = linkContextRegistry.getCached(guildId);
         if(cached.isEmpty()) throw new IllegalStateException("LinkContext for this guild is undefined");
-        return cached.get().getTrackQueue();
+        LinkContext linkContext = cached.get();
+        List<TrackQueueElement> trackList = linkContext.getTrackQueue()
+                .stream()
+                .toList();
+        return new TrackQueueInfo(trackList, linkContext.getTrackScheduler()
+                .getCurrentTrack(), linkContext.getTrackScheduler().getState());
     }
 
     public Mono<Void> join(AudioChannel audioChannel) {

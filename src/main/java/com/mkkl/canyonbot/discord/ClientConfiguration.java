@@ -16,13 +16,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.net.URI;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 @Slf4j
 @Configuration
 public class ClientConfiguration {
-    @Autowired
-    private EventDispatcher eventDispatcher;
     private final String token;
 
     public ClientConfiguration() {
@@ -37,6 +36,9 @@ public class ClientConfiguration {
             throw new RuntimeException("Token is invalid");
         }
     }
+    public long getUserId() {
+        return Helpers.getUserIdFromToken(token);
+    }
 
     @Bean
     public GatewayDiscordClient gateway() {
@@ -47,22 +49,5 @@ public class ClientConfiguration {
                 .setEnabledIntents(IntentSet.nonPrivileged())
                 .login()
                 .block();
-    }
-
-    //TODO move
-    @Bean
-    public LavalinkClient lavalinkClient() {
-        LavalinkClient client = new LavalinkClient(Helpers.getUserIdFromToken(token));
-
-        client.getLoadBalancer().addPenaltyProvider(new VoiceRegionPenaltyProvider());
-        client.addNode(new NodeOptions.Builder().setName("Lavalink server 1")
-                .setServerUri(URI.create("ws://localhost:2333"))
-                .setPassword("youshallnotpass")
-                .setHttpTimeout(5000L)
-                .build());
-        //TODO causes exception reactor.core.publisher.Sinks$EmissionException: Spec. Rule 1.3 - onSubscribe, onNext, onError and onComplete signaled to a Subscriber MUST be signaled serially.
-        client.on(ClientEvent.class).subscribe(event -> eventDispatcher.publish(LavalinkEventAdapter.get(event)));
-        return client;
-
     }
 }

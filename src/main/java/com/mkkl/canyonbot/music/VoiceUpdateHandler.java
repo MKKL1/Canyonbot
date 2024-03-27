@@ -79,7 +79,6 @@ public class VoiceUpdateHandler {
                     Link link = lavalinkClient.getOrCreateLink(
                             event.getGuildId().asLong(),
                             VoiceRegion.fromEndpoint(Objects.requireNonNull(event.getEndpoint())));
-                    log.info("voiceServerUpdate");
                     link.onVoiceServerUpdate(voiceState);
                     return Mono.empty();
                 })

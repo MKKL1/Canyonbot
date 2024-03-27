@@ -7,14 +7,20 @@ import discord4j.common.util.Snowflake;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.rest.RestClient;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
+import org.springframework.context.annotation.PropertySources;
 import org.springframework.stereotype.Component;
 
-@Component
-@PropertySource("classpath:application.properties")
 @Configuration
+@PropertySources({
+    @PropertySource("classpath:application.properties"),
+    @PropertySource("file:${CONFIG_PATH}")
+})
+
+@EnableAutoConfiguration
 public class BotConfiguration {
     @Value("${bot.commands.guildCommandsEnabled:false}")
     private boolean guildCommandsEnabled;
