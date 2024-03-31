@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 @Configuration
 @PropertySources({
     @PropertySource("classpath:application.properties"),
-    @PropertySource("file:${CONFIG_PATH}")
+    @PropertySource(value = "file:${CONFIG_PATH}", ignoreResourceNotFound = true)
 })
 
 @EnableAutoConfiguration

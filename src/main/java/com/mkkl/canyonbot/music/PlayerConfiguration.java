@@ -18,7 +18,7 @@ import org.springframework.context.annotation.PropertySources;
 @EnableConfigurationProperties(value = PlayerConfigurationProperties.class)
 @PropertySources({
         @PropertySource("classpath:application.properties"),
-        @PropertySource("file:${CONFIG_PATH}")
+        @PropertySource(value = "file:${CONFIG_PATH}", ignoreResourceNotFound = true)
 })
 @Configuration
 public class PlayerConfiguration {
