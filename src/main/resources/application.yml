@@ -1,0 +1,20 @@
+player:
+  #Example lavalink node
+  nodes:
+    - name: Local Lavalink server
+      uri: ws://localhost:2333
+      password: youshallnotpass
+      http-timeout: 5000
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/canyonbot
+    username: root
+    password: root
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect

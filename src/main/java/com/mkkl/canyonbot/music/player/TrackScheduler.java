@@ -3,6 +3,7 @@ package com.mkkl.canyonbot.music.player;
 import com.mkkl.canyonbot.event.EventDispatcher;
 import com.mkkl.canyonbot.music.player.event.MayDestroyPlayerEvent;
 import com.mkkl.canyonbot.music.player.event.lavalink.player.PlayerTrackEndEvent;
+import com.mkkl.canyonbot.music.player.event.scheduler.PlayNextEvent;
 import com.mkkl.canyonbot.music.player.event.scheduler.QueueEmptyEvent;
 import com.mkkl.canyonbot.music.player.queue.TrackQueue;
 import com.mkkl.canyonbot.music.player.queue.TrackQueueElement;
@@ -13,6 +14,8 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.Disposable;
 import reactor.core.publisher.Mono;
+
+import java.util.function.Consumer;
 
 @Slf4j
 public class TrackScheduler implements Disposable{
@@ -26,10 +29,13 @@ public class TrackScheduler implements Disposable{
     @Getter
     private final Link link;
 
+    private final EventDispatcher eventDispatcher;
+
     private final Disposable playerTrackEndEventSub;
     public TrackScheduler(TrackQueue trackQueue, Link link, long guildId, EventDispatcher eventDispatcher) {
         this.link = link;
         this.trackQueue = trackQueue;
+        this.eventDispatcher = eventDispatcher;
 
         playerTrackEndEventSub = eventDispatcher.on(PlayerTrackEndEvent.class)
                 .filter(trackEndEvent -> trackEndEvent.getReason().getMayStartNext())
@@ -77,8 +83,9 @@ public class TrackScheduler implements Disposable{
     private Mono<LavalinkPlayer> playNext() {
         return Mono.fromCallable(trackQueue::dequeue)
                 .doOnNext(trackQueueElement -> currentTrack = trackQueueElement)
-                .flatMap(trackQueueElement -> link.createOrUpdatePlayer().setTrack(trackQueueElement.getTrack()));
-        //TODO play next track event
+                .flatMap(trackQueueElement -> link.createOrUpdatePlayer().setTrack(trackQueueElement.getTrack()))
+                .doOnNext(lavalinkPlayer ->
+                        eventDispatcher.publish(new PlayNextEvent(lavalinkPlayer.getGuildId(), trackQueue, currentTrack)));
     }
 
     public Mono<Void> pause() {
