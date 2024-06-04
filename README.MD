@@ -46,9 +46,9 @@ services:
     environment:
       - _JAVA_OPTIONS=-Xmx2G
       - DISCORD_BOT_TOKEN=<your discord token here>
-      - CONFIG_PATH=/opt/canyonbot/application.properties
+      - CONFIG_PATH=/opt/canyonbot/application.yml
     volumes:
-      - ./application.properties:/opt/canyonbot/application.properties
+      - ./application.yml:/opt/canyonbot/application.yml
       - ./logback.xml:/opt/canyonbot/logback.xml
     networks:
       - lavalink

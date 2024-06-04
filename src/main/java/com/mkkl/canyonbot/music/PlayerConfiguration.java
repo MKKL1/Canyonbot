@@ -17,7 +17,7 @@ import org.springframework.context.annotation.PropertySources;
 @Slf4j
 @EnableConfigurationProperties(value = PlayerConfigurationProperties.class)
 @PropertySources({
-        @PropertySource("classpath:application.properties"),
+        @PropertySource("classpath:application.yml"),
         @PropertySource(value = "file:${CONFIG_PATH}", ignoreResourceNotFound = true)
 })
 @Configuration
