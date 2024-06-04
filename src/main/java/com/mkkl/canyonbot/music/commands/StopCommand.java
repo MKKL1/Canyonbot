@@ -25,7 +25,8 @@ public class StopCommand extends BotCommand {
     public Mono<Void> execute(ChatInputInteractionEvent event) {
         return Mono.defer(() -> Mono.justOrEmpty(event.getInteraction().getGuildId()))
                 .switchIfEmpty(Mono.error(new BotInternalException("GuildId was undefined")))
-                .flatMap(playerService::leaveChannel)
+                .flatMap(guildId -> playerService.leaveChannel(guildId).thenReturn(guildId))
+                .doOnNext(guildId -> playerService.clearQueue(guildId.asLong()))
                 .then(Mono.defer(() -> event.reply("Disconnecting")));
     }
 

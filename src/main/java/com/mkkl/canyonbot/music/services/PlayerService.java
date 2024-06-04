@@ -1,6 +1,7 @@
 package com.mkkl.canyonbot.music.services;
 
 import com.mkkl.canyonbot.music.VoiceConnectionRegistry;
+import com.mkkl.canyonbot.music.exceptions.LinkContextNotFound;
 import com.mkkl.canyonbot.music.player.LinkContext;
 import com.mkkl.canyonbot.music.player.LinkContextRegistry;
 import com.mkkl.canyonbot.music.player.TrackScheduler;
@@ -44,14 +45,14 @@ public class PlayerService {
 
     public Mono<Void> stopPlayback(long guildId) {
         return Mono.justOrEmpty(linkContextRegistry.getCached(guildId))
-                .switchIfEmpty(Mono.error(new IllegalStateException("LinkContext for this guild is undefined")))
+                .switchIfEmpty(Mono.error(new LinkContextNotFound()))
                 .filter(linkContext -> linkContext.getTrackScheduler().getState() != TrackScheduler.State.STOPPED)
                 .flatMap(linkContext -> linkContext.getTrackScheduler().stop());
     }
 
     public Mono<Void> pausePlayback(long guildId) {
         return Mono.justOrEmpty(linkContextRegistry.getCached(guildId))
-                .switchIfEmpty(Mono.error(new IllegalStateException("LinkContext for this guild is undefined")))
+                .switchIfEmpty(Mono.error(new LinkContextNotFound()))
                 .filter(linkContext -> linkContext.getTrackScheduler().getState() != TrackScheduler.State.PAUSED)
                 .flatMap(linkContext -> linkContext.getTrackScheduler().pause());
     }
@@ -59,7 +60,7 @@ public class PlayerService {
     //TODO move it to queue service?
     public Mono<TrackQueueElement> skipTrack(long guildId) {
         return Mono.justOrEmpty(linkContextRegistry.getCached(guildId))
-                .switchIfEmpty(Mono.error(new IllegalStateException("LinkContext for this guild is undefined")))
+                .switchIfEmpty(Mono.error(new LinkContextNotFound()))
                 .flatMap(linkContext -> linkContext.getTrackScheduler().skip());
     }
 
@@ -73,16 +74,22 @@ public class PlayerService {
         return linkContext.getTrackQueue().addAll(trackQueueElements);
     }
 
+    public void clearQueue(long guildId) {
+        Optional<LinkContext> cached = linkContextRegistry.getCached(guildId);
+        if(cached.isEmpty()) throw new LinkContextNotFound();
+        cached.get().getTrackQueue().clear();
+    }
+
     public void shuffleQueue(long guildId) {
         Optional<LinkContext> cached = linkContextRegistry.getCached(guildId);
-        if(cached.isEmpty()) throw new IllegalStateException("LinkContext for this guild is undefined");
+        if(cached.isEmpty()) throw new LinkContextNotFound();
         cached.get().getTrackQueue().shuffle();
     }
 
     //Not sure if it is good idea to return track queue instance
     public TrackQueueInfo getTrackQueueInfo(long guildId) {
         Optional<LinkContext> cached = linkContextRegistry.getCached(guildId);
-        if(cached.isEmpty()) throw new IllegalStateException("LinkContext for this guild is undefined");
+        if(cached.isEmpty()) throw new LinkContextNotFound();
         LinkContext linkContext = cached.get();
         List<TrackQueueElement> trackList = linkContext.getTrackQueue()
                 .stream()
