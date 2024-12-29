@@ -1,7 +1,5 @@
 package com.mkkl.canyonbot.music.player.queue;
 
-import jakarta.annotation.Nullable;
-
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -10,7 +8,6 @@ public class SimpleTrackQueue implements TrackQueue {
 
     private final Queue<TrackQueueElement> queue = new LinkedBlockingQueue<>();
 
-    @Nullable
     @Override
     public TrackQueueElement dequeue() {
         return queue.poll();

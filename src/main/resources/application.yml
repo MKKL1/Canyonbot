@@ -6,13 +6,17 @@ player:
       password: youshallnotpass
       http-timeout: 5000
 
-spring:
-  datasource:
-    url: jdbc:postgresql://localhost:5432/canyonbot
-    username: root
-    password: root
-    driver-class-name: org.postgresql.Driver
-  jpa:
-    hibernate:
-      ddl-auto: update
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
+bot:
+  commands:
+    guildCommandsEnabled: true
+    guildId: 846470026805510234
+#spring:
+#  datasource:
+#    url: jdbc:postgresql://localhost:5432/canyonbot
+#    username: root
+#    password: root
+#    driver-class-name: org.postgresql.Driver
+#  jpa:
+#    hibernate:
+#      ddl-auto: update
+#    database-platform: org.hibernate.dialect.PostgreSQLDialect

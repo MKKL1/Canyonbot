@@ -2,7 +2,6 @@ package com.mkkl.canyonbot.discord;
 
 import com.mkkl.canyonbot.event.EventDispatcher;
 import com.mkkl.canyonbot.music.player.event.lavalink.LavalinkEventAdapter;
-import dev.arbjerg.lavalink.client.ClientEvent;
 import dev.arbjerg.lavalink.client.Helpers;
 import dev.arbjerg.lavalink.client.LavalinkClient;
 import dev.arbjerg.lavalink.client.NodeOptions;

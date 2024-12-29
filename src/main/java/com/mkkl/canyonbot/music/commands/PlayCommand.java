@@ -11,7 +11,7 @@ import com.mkkl.canyonbot.music.search.internal.handler.SearchResultHandler;
 import com.mkkl.canyonbot.music.services.PlayerService;
 import com.mkkl.canyonbot.music.services.SearchService;
 import com.mkkl.canyonbot.music.search.internal.handler.TrackResultHandler;
-import dev.arbjerg.lavalink.client.protocol.*;
+import dev.arbjerg.lavalink.client.player.*;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.VoiceState;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;

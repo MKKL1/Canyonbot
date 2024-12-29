@@ -1,6 +1,6 @@
 package com.mkkl.canyonbot.music.player.queue;
 
-import dev.arbjerg.lavalink.client.protocol.Track;
+import dev.arbjerg.lavalink.client.player.Track;
 import discord4j.core.object.entity.User;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

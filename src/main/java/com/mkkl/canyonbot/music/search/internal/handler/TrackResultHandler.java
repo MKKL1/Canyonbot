@@ -3,14 +3,9 @@ package com.mkkl.canyonbot.music.search.internal.handler;
 import com.mkkl.canyonbot.discord.response.Response;
 import com.mkkl.canyonbot.music.commands.PlayCommand;
 import com.mkkl.canyonbot.music.messages.generators.AudioTrackMessage;
-import com.mkkl.canyonbot.music.services.PlayerService;
-import dev.arbjerg.lavalink.client.protocol.Track;
-import dev.arbjerg.lavalink.client.protocol.TrackLoaded;
-import discord4j.core.object.entity.Message;
-import discord4j.core.spec.InteractionFollowupCreateSpec;
-import org.springframework.beans.factory.annotation.Autowired;
+import dev.arbjerg.lavalink.client.player.Track;
+import dev.arbjerg.lavalink.client.player.TrackLoaded;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Mono;
 
 @Service
 public class TrackResultHandler implements LavalinkLoadResultHandler<TrackLoaded> {

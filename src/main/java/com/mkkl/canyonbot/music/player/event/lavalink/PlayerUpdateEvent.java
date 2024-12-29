@@ -18,7 +18,7 @@ public class PlayerUpdateEvent implements LavaLinkEvent, GuildEvent {
         this.guildId = guildId;
         this.state = state;
     }
-    public PlayerUpdateEvent(dev.arbjerg.lavalink.client.PlayerUpdateEvent oldUpdateEvent) {
+    public PlayerUpdateEvent(dev.arbjerg.lavalink.client.event.PlayerUpdateEvent oldUpdateEvent) {
         this(oldUpdateEvent.getNode(), oldUpdateEvent.getGuildId(), oldUpdateEvent.getState());
     }
 }

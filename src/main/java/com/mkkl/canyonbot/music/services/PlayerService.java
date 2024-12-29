@@ -8,7 +8,7 @@ import com.mkkl.canyonbot.music.player.TrackScheduler;
 import com.mkkl.canyonbot.music.player.queue.TrackQueue;
 import com.mkkl.canyonbot.music.player.queue.TrackQueueElement;
 import com.mkkl.canyonbot.music.player.queue.TrackQueueInfo;
-import dev.arbjerg.lavalink.client.protocol.Track;
+import dev.arbjerg.lavalink.client.player.Track;
 import dev.arbjerg.lavalink.libraries.discord4j.Discord4JUtils;
 import discord4j.common.util.Snowflake;
 import discord4j.core.GatewayDiscordClient;

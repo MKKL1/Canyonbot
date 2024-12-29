@@ -2,8 +2,8 @@ package com.mkkl.canyonbot.music.player.event.lavalink.player;
 
 import com.mkkl.canyonbot.music.player.event.PlayerEvent;
 import dev.arbjerg.lavalink.client.LavalinkNode;
-import dev.arbjerg.lavalink.client.TrackStartEvent;
-import dev.arbjerg.lavalink.client.protocol.Track;
+import dev.arbjerg.lavalink.client.event.TrackStartEvent;
+import dev.arbjerg.lavalink.client.player.Track;
 import lombok.Getter;
 
 @Getter

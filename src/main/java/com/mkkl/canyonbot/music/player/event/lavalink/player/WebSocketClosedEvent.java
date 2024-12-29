@@ -14,7 +14,7 @@ public class WebSocketClosedEvent implements PlayerEvent {
     private final String reason;
     private final boolean byRemote;
 
-    public WebSocketClosedEvent(dev.arbjerg.lavalink.client.WebSocketClosedEvent webSocketClosedEvent) {
+    public WebSocketClosedEvent(dev.arbjerg.lavalink.client.event.WebSocketClosedEvent webSocketClosedEvent) {
         this(webSocketClosedEvent.getNode(), webSocketClosedEvent.getGuildId(), webSocketClosedEvent.getCode(), webSocketClosedEvent.getReason(), webSocketClosedEvent.getByRemote());
     }
 }

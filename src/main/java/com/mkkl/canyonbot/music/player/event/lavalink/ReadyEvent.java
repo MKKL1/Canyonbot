@@ -16,7 +16,7 @@ public class ReadyEvent implements LavaLinkEvent {
         this.sessionId = sessionId;
     }
 
-    public ReadyEvent(dev.arbjerg.lavalink.client.ReadyEvent readyEvent) {
+    public ReadyEvent(dev.arbjerg.lavalink.client.event.ReadyEvent readyEvent) {
         this(readyEvent.getNode(), readyEvent.getResumed(), readyEvent.getSessionId());
     }
 }

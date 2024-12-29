@@ -5,7 +5,7 @@ import com.mkkl.canyonbot.music.messages.ResponseFormatUtils;
 import com.mkkl.canyonbot.music.messages.ResponseMessage;
 import com.mkkl.canyonbot.music.messages.SearchResponseConst;
 import com.mkkl.canyonbot.music.search.internal.sources.SearchSource;
-import dev.arbjerg.lavalink.client.protocol.Track;
+import dev.arbjerg.lavalink.client.player.Track;
 import discord4j.core.object.entity.User;
 import discord4j.core.spec.EmbedCreateSpec;
 import org.immutables.value.Value;

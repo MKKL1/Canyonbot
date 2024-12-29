@@ -15,8 +15,7 @@ import org.springframework.context.annotation.PropertySources;
 import org.springframework.stereotype.Component;
 
 @Configuration
-
-@EnableAutoConfiguration
+//@EnableAutoConfiguration
 public class BotConfiguration {
     @Value("${bot.commands.guildCommandsEnabled:false}")
     private boolean guildCommandsEnabled;

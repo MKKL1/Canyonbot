@@ -19,7 +19,8 @@ public class StatsEvent implements LavaLinkEvent {
     private final Memory memory;
     private final Cpu cpu;
 
-    public StatsEvent(dev.arbjerg.lavalink.client.StatsEvent statsEvent) {
-        this(statsEvent.getNode(), statsEvent.getFrameStats(), statsEvent.getPlayers(), statsEvent.getPlayingPlayers(), statsEvent.getUptime(), statsEvent.getMemory(), statsEvent.getCpu());
+
+    public StatsEvent(dev.arbjerg.lavalink.client.event.StatsEvent clientStatsEvent) {
+        this(clientStatsEvent.getNode(), clientStatsEvent.getFrameStats(), clientStatsEvent.getPlayers(), clientStatsEvent.getPlayingPlayers(), clientStatsEvent.getUptime(), clientStatsEvent.getMemory(), clientStatsEvent.getCpu());
     }
 }

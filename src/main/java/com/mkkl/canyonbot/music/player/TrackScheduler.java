@@ -7,9 +7,8 @@ import com.mkkl.canyonbot.music.player.event.scheduler.PlayNextEvent;
 import com.mkkl.canyonbot.music.player.event.scheduler.QueueEmptyEvent;
 import com.mkkl.canyonbot.music.player.queue.TrackQueue;
 import com.mkkl.canyonbot.music.player.queue.TrackQueueElement;
-import dev.arbjerg.lavalink.client.LavalinkPlayer;
 import dev.arbjerg.lavalink.client.Link;
-import jakarta.annotation.Nullable;
+import dev.arbjerg.lavalink.client.player.LavalinkPlayer;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.Disposable;
@@ -19,7 +18,6 @@ import java.util.function.Consumer;
 
 @Slf4j
 public class TrackScheduler implements Disposable{
-    @Nullable
     @Getter
     private TrackQueueElement currentTrack = null;
     @Getter
