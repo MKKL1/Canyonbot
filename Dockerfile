@@ -1,4 +1,4 @@
-FROM eclipse-temurin:21-jre-jammy
+FROM eclipse-temurin:23-jre-jammy
 
 RUN groupadd -g 322 canyonbot && \
     useradd -r -u 322 -g canyonbot canyonbot
