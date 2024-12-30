@@ -21,10 +21,10 @@ public class LavalinkEventAdapter {
         eventMap.put(TrackExceptionEvent.class, (event) -> new PlayerTrackExceptionEvent((TrackExceptionEvent) event));
         eventMap.put(TrackStartEvent.class, (event) -> new PlayerTrackStartEvent((TrackStartEvent) event));
         eventMap.put(TrackStuckEvent.class, (event) -> new PlayerTrackStuckEvent((TrackStuckEvent) event));
-        eventMap.put(WebSocketClosedEvent.class, (event) -> new com.mkkl.canyonbot.music.player.event.lavalink.player.WebSocketClosedEvent((WebSocketClosedEvent) event));
-        eventMap.put(dev.arbjerg.lavalink.client.event.PlayerUpdateEvent.class, (event) -> new com.mkkl.canyonbot.music.player.event.lavalink.PlayerUpdateEvent((dev.arbjerg.lavalink.client.event.PlayerUpdateEvent) event));
-        eventMap.put(dev.arbjerg.lavalink.client.event.ReadyEvent.class, (event) -> new com.mkkl.canyonbot.music.player.event.lavalink.ReadyEvent((dev.arbjerg.lavalink.client.event.ReadyEvent) event));
-        eventMap.put(dev.arbjerg.lavalink.client.event.StatsEvent.class, (event) -> new com.mkkl.canyonbot.music.player.event.lavalink.StatsEvent((dev.arbjerg.lavalink.client.event.StatsEvent) event));
+        eventMap.put(dev.arbjerg.lavalink.client.event.WebSocketClosedEvent.class, (event) -> new com.mkkl.canyonbot.music.player.event.lavalink.player.WebSocketClosedEvent((dev.arbjerg.lavalink.client.event.WebSocketClosedEvent) event));
+        eventMap.put(dev.arbjerg.lavalink.client.event.PlayerUpdateEvent.class, (event) -> new PlayerUpdateEvent((dev.arbjerg.lavalink.client.event.PlayerUpdateEvent) event));
+        eventMap.put(dev.arbjerg.lavalink.client.event.ReadyEvent.class, (event) -> new ReadyEvent((dev.arbjerg.lavalink.client.event.ReadyEvent) event));
+        eventMap.put(dev.arbjerg.lavalink.client.event.StatsEvent.class, (event) -> new StatsEvent((dev.arbjerg.lavalink.client.event.StatsEvent) event));
     }
 
     public static AbstractEvent get(ClientEvent event) {

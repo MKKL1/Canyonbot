@@ -44,6 +44,7 @@ public class LinkContextRegistry {
     public boolean isCached(long guildId) {
         return linkContextMap.containsKey(guildId);
     }
+
     public Mono<Void> destroy(long guildId) {
         return Mono.fromCallable(() -> linkContextMap.remove(guildId))
                 .flatMap(LinkContext::destroy)
