@@ -1,7 +1,5 @@
-package com.mkkl.canyonbot.commands.internal;
+package com.mkkl.canyonbot.commands;
 
-import com.mkkl.canyonbot.commands.AutoCompleteCommand;
-import com.mkkl.canyonbot.commands.CommandRegistry;
 import discord4j.core.GatewayDiscordClient;
 import discord4j.core.event.domain.interaction.ChatInputAutoCompleteEvent;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;

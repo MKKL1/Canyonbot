@@ -1,6 +1,6 @@
 package com.mkkl.canyonbot.music.search;
 
-import com.mkkl.canyonbot.music.search.internal.sources.SearchSource;
+import com.mkkl.canyonbot.music.search.sources.SearchSource;
 import lombok.Builder;
 
 @Builder

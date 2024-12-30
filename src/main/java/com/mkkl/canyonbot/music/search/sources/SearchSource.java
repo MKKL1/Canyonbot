@@ -1,4 +1,4 @@
-package com.mkkl.canyonbot.music.search.internal.sources;
+package com.mkkl.canyonbot.music.search.sources;
 
 public interface SearchSource {
     default String name() {

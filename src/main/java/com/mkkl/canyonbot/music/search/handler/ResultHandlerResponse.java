@@ -1,4 +1,4 @@
-package com.mkkl.canyonbot.music.search.internal.handler;
+package com.mkkl.canyonbot.music.search.handler;
 
 import com.mkkl.canyonbot.discord.response.Response;
 import dev.arbjerg.lavalink.client.player.Track;

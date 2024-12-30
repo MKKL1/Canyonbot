@@ -2,7 +2,7 @@ package com.mkkl.canyonbot.commands;
 
 import com.mkkl.canyonbot.commands.exceptions.BotExternalException;
 import com.mkkl.canyonbot.commands.exceptions.BotInternalException;
-import com.mkkl.canyonbot.music.messages.generators.ErrorMessage;
+import com.mkkl.canyonbot.music.messages.data.ErrorMessage;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.spec.InteractionFollowupCreateSpec;
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +36,7 @@ public class DefaultErrorHandler implements CommandErrorHandler {
                                     .message(message)
                                     .build()
                                     .getMessage()
-                                    .embeds())
+                                    .getEmbeds())
                             .build())
                     .then();
         }

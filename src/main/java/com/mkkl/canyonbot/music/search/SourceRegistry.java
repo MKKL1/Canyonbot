@@ -1,5 +1,5 @@
 package com.mkkl.canyonbot.music.search;
-import com.mkkl.canyonbot.music.search.internal.sources.SearchSource;
+import com.mkkl.canyonbot.music.search.sources.SearchSource;
 import lombok.Getter;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;

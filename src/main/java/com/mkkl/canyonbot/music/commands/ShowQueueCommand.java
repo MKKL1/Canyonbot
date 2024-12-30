@@ -3,12 +3,9 @@ package com.mkkl.canyonbot.music.commands;
 import com.mkkl.canyonbot.commands.BotCommand;
 import com.mkkl.canyonbot.commands.DefaultErrorHandler;
 import com.mkkl.canyonbot.commands.DiscordCommand;
-import com.mkkl.canyonbot.commands.exceptions.BotExternalException;
 import com.mkkl.canyonbot.commands.exceptions.BotInternalException;
 import com.mkkl.canyonbot.discord.response.Response;
-import com.mkkl.canyonbot.music.messages.generators.QueueMessage;
-import com.mkkl.canyonbot.music.player.LinkContext;
-import com.mkkl.canyonbot.music.player.LinkContextRegistry;
+import com.mkkl.canyonbot.music.messages.data.QueueMessage;
 import com.mkkl.canyonbot.music.player.queue.TrackQueueInfo;
 import com.mkkl.canyonbot.music.services.PlayerService;
 import discord4j.common.util.Snowflake;
@@ -17,7 +14,6 @@ import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.command.ApplicationCommandInteractionOption;
 import discord4j.core.object.command.ApplicationCommandInteractionOptionValue;
 import discord4j.core.object.command.ApplicationCommandOption;
-import discord4j.core.object.entity.Guild;
 import discord4j.discordjson.json.ApplicationCommandOptionData;
 import discord4j.discordjson.json.ApplicationCommandRequest;
 import lombok.AllArgsConstructor;
@@ -69,7 +65,7 @@ public class ShowQueueCommand extends BotCommand {
                         else if (page > maxPage) page = maxPage;
                     }
 
-                    QueueMessage.Builder builder = QueueMessage.builder()
+                    QueueMessage.QueueMessageBuilder builder = QueueMessage.builder()
                             .gateway(gateway)
                             .caller(event.getInteraction().getUser())
                             .currentTrack(trackQueueInfo.getCurrentTrack())
@@ -82,7 +78,7 @@ public class ShowQueueCommand extends BotCommand {
 
                     return event.reply(response.asCallbackSpec())
                             .then(event.getReply()
-                                    .flatMap(message -> response.getResponseInteraction().get().interaction(message)));
+                                    .flatMap(message -> response.getInteraction().interaction(message)));
                 })
 
                 .then();

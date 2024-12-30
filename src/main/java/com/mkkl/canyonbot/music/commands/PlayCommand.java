@@ -5,12 +5,12 @@ import com.mkkl.canyonbot.commands.DefaultErrorHandler;
 import com.mkkl.canyonbot.commands.DiscordCommand;
 import com.mkkl.canyonbot.music.exceptions.*;
 import com.mkkl.canyonbot.music.search.SourceRegistry;
-import com.mkkl.canyonbot.music.search.internal.sources.SearchSource;
-import com.mkkl.canyonbot.music.search.internal.handler.PlaylistResultHandler;
-import com.mkkl.canyonbot.music.search.internal.handler.SearchResultHandler;
+import com.mkkl.canyonbot.music.search.sources.SearchSource;
+import com.mkkl.canyonbot.music.search.handler.PlaylistResultHandler;
+import com.mkkl.canyonbot.music.search.handler.SearchResultHandler;
 import com.mkkl.canyonbot.music.services.PlayerService;
 import com.mkkl.canyonbot.music.services.SearchService;
-import com.mkkl.canyonbot.music.search.internal.handler.TrackResultHandler;
+import com.mkkl.canyonbot.music.search.handler.TrackResultHandler;
 import dev.arbjerg.lavalink.client.player.*;
 import discord4j.core.event.domain.interaction.ChatInputInteractionEvent;
 import discord4j.core.object.VoiceState;
@@ -161,8 +161,8 @@ public class PlayCommand extends BotCommand {
                         .then(joinChannel(playerService, context))
                         .then(playerService.beginPlayback(context.guild.getId().asLong()))
                         .then(context.event.createFollowup(resultHandlerResponse.getResponse().asFollowupSpec())
-                                .filter(ignore -> resultHandlerResponse.getResponse().getResponseInteraction().isPresent())
-                                .flatMap(message -> resultHandlerResponse.getResponse().getResponseInteraction().get().interaction(message))
+                                .filter(ignore -> resultHandlerResponse.getResponse().getInteraction() != null)
+                                .flatMap(message -> resultHandlerResponse.getResponse().getInteraction().interaction(message))
                         )
                 );
     }

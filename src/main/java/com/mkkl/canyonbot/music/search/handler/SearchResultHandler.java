@@ -1,10 +1,9 @@
-package com.mkkl.canyonbot.music.search.internal.handler;
+package com.mkkl.canyonbot.music.search.handler;
 
 import com.mkkl.canyonbot.music.commands.PlayCommand;
 import dev.arbjerg.lavalink.client.player.SearchResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import reactor.core.publisher.Mono;
 
 @Service
 public class SearchResultHandler implements LavalinkLoadResultHandler<SearchResult> {

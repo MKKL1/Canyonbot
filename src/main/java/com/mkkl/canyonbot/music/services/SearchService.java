@@ -1,7 +1,7 @@
 package com.mkkl.canyonbot.music.services;
 
 import com.mkkl.canyonbot.music.search.SearchQuery;
-import com.mkkl.canyonbot.music.search.internal.sources.SearchSource;
+import com.mkkl.canyonbot.music.search.sources.SearchSource;
 import dev.arbjerg.lavalink.client.LavalinkClient;
 import dev.arbjerg.lavalink.client.player.LavalinkLoadResult;
 import discord4j.core.object.entity.Guild;

@@ -1,6 +1,6 @@
-package com.mkkl.canyonbot.music.search.internal.sources.youtube;
+package com.mkkl.canyonbot.music.search.sources.youtube;
 
-import com.mkkl.canyonbot.music.search.internal.sources.SearchSource;
+import com.mkkl.canyonbot.music.search.sources.SearchSource;
 import org.springframework.stereotype.Component;
 
 @Component

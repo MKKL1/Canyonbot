@@ -1,8 +1,8 @@
-package com.mkkl.canyonbot.music.search.internal.handler;
+package com.mkkl.canyonbot.music.search.handler;
 
 import com.mkkl.canyonbot.discord.response.Response;
 import com.mkkl.canyonbot.music.commands.PlayCommand;
-import com.mkkl.canyonbot.music.messages.generators.AudioTrackMessage;
+import com.mkkl.canyonbot.music.messages.data.AudioTrackMessage;
 import dev.arbjerg.lavalink.client.player.Track;
 import dev.arbjerg.lavalink.client.player.TrackLoaded;
 import org.springframework.stereotype.Service;

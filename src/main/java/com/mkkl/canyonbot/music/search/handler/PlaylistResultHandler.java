@@ -1,11 +1,9 @@
-package com.mkkl.canyonbot.music.search.internal.handler;
+package com.mkkl.canyonbot.music.search.handler;
 
 import com.mkkl.canyonbot.discord.response.Response;
 import com.mkkl.canyonbot.discord.utils.TimeoutUtils;
 import com.mkkl.canyonbot.music.commands.PlayCommand;
-import com.mkkl.canyonbot.music.messages.generators.ShortPlaylistMessage;
-import com.mkkl.canyonbot.music.player.LinkContext;
-import com.mkkl.canyonbot.music.player.LinkContextRegistry;
+import com.mkkl.canyonbot.music.messages.data.ShortPlaylistMessage;
 import com.mkkl.canyonbot.music.player.queue.TrackQueueElement;
 import com.mkkl.canyonbot.music.services.PlayerService;
 import dev.arbjerg.lavalink.client.player.PlaylistLoaded;
@@ -13,11 +11,7 @@ import dev.arbjerg.lavalink.client.player.Track;
 import discord4j.core.GatewayDiscordClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
-
-import java.security.InvalidParameterException;
-import java.util.Optional;
 
 @Component
 public class PlaylistResultHandler implements LavalinkLoadResultHandler<PlaylistLoaded> {
@@ -29,7 +23,7 @@ public class PlaylistResultHandler implements LavalinkLoadResultHandler<Playlist
     @Override
     public ResultHandlerResponse handle(PlayCommand.Context context, PlaylistLoaded playlistLoaded) {
         Response shortPlaylistMessage = ShortPlaylistMessage.builder()
-                .query(context.getQuery())
+                .query(context.getQuery().get())
                 .playlist(playlistLoaded)
                 .user(context.getEvent().getInteraction().getUser())
                 .gateway(gateway)
