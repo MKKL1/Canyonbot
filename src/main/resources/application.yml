@@ -6,10 +6,6 @@ player:
       password: youshallnotpass
       http-timeout: 5000
 
-bot:
-  commands:
-    guildCommandsEnabled: true
-    guildId: 846470026805510234
 #spring:
 #  datasource:
 #    url: jdbc:postgresql://localhost:5432/canyonbot
