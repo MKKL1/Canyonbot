@@ -74,6 +74,12 @@ public class PlayerService {
         return linkContext.getTrackQueue().addAll(trackQueueElements);
     }
 
+    public Mono<TrackQueueElement> removeFirstFromQueue(long guildId) {
+        return Mono.justOrEmpty(linkContextRegistry.getCached(guildId))
+                .switchIfEmpty(Mono.error(new LinkContextNotFound()))
+                .map(linkContext -> linkContext.getTrackQueue().dequeue());
+    }
+
     public void clearQueue(long guildId) {
         Optional<LinkContext> cached = linkContextRegistry.getCached(guildId);
         if(cached.isEmpty()) throw new LinkContextNotFound();
