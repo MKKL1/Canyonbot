@@ -31,6 +31,6 @@ public class SkipCommand extends BotCommand {
                 .switchIfEmpty(Mono.error(new BotInternalException("GuildId was undefined")))
                 .map(Snowflake::asLong)
                 .flatMap(playerService::skipTrack)
-                .flatMap(track -> event.reply("Skipping " + track.getTrack().getInfo().getTitle()));
+                .flatMap(track -> event.reply("Skipping " + track.getTitle()));
     }
 }

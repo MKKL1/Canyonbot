@@ -63,8 +63,7 @@ public class QueueMessage implements ResponseMessage {
 
                         stringBuilder.append(i + 1)
                                 .append(". ")
-                                .append(trackQueueElement.getTrack()
-                                        .getInfo().getTitle())
+                                .append(trackQueueElement.getTitle())
                                 .append("\n");
 
                     }

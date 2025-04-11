@@ -69,6 +69,11 @@ public class PlayerService {
         return linkContext.getTrackQueue().add(new TrackQueueElement(track, user));
     }
 
+    public boolean addTrackToQueueHide(long guildId, Track track, User user) {
+        LinkContext linkContext = linkContextRegistry.getOrCreate(guildId);
+        return linkContext.getTrackQueue().add(new TrackQueueElement(track, user, true));
+    }
+
     public boolean addTracksToQueue(long guildId, Collection<TrackQueueElement> trackQueueElements) {
         LinkContext linkContext = linkContextRegistry.getOrCreate(guildId);
         return linkContext.getTrackQueue().addAll(trackQueueElements);

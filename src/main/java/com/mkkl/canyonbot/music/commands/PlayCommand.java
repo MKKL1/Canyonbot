@@ -184,11 +184,11 @@ public class PlayCommand extends BotCommand {
                                         return searchService.search(context.guild, surpriseLink)
                                                 .flatMap(result -> switch (result) {
                                                     case TrackLoaded trackLoaded ->
-                                                            Mono.fromRunnable(() -> enqueueTrack(playerService, context, trackLoaded.getTrack()));
+                                                            Mono.fromRunnable(() -> enqueueTrackHide(playerService, context, trackLoaded.getTrack()));
                                                     case PlaylistLoaded playlistLoaded ->
-                                                            Mono.fromRunnable(() -> enqueueTrack(playerService, context, playlistLoaded.getTracks().getFirst()));
+                                                            Mono.fromRunnable(() -> enqueueTrackHide(playerService, context, playlistLoaded.getTracks().getFirst()));
                                                     case SearchResult searchResult when !searchResult.getTracks().isEmpty() ->
-                                                            Mono.fromRunnable(() -> enqueueTrack(playerService, context, searchResult.getTracks().getFirst()));
+                                                            Mono.fromRunnable(() -> enqueueTrackHide(playerService, context, searchResult.getTracks().getFirst()));
                                                     case null, default -> Mono.empty(); // no track to play
 
                                                 })
@@ -216,6 +216,12 @@ public class PlayCommand extends BotCommand {
     //This method is not needed
     private static void enqueueTrack(PlayerService playerService, Context context, Track track) {
         playerService.addTrackToQueue(context.guild.getId().asLong(),
+                track,
+                context.event.getInteraction().getUser());
+    }
+
+    private static void enqueueTrackHide(PlayerService playerService, Context context, Track track) {
+        playerService.addTrackToQueueHide(context.guild.getId().asLong(),
                 track,
                 context.event.getInteraction().getUser());
     }
