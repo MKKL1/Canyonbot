@@ -22,6 +22,16 @@ public class PlaylistResultHandler implements LavalinkLoadResultHandler<Playlist
 
     @Override
     public ResultHandlerResponse handle(PlayCommand.Context context, PlaylistLoaded playlistLoaded) {
+        Track track;
+        if (playlistLoaded.getInfo().getSelectedTrack() != -1) {
+            track = playlistLoaded.getTracks().get(playlistLoaded.getInfo().getSelectedTrack());
+        }
+        else if(!playlistLoaded.getTracks().isEmpty()) {
+            track = playlistLoaded.getTracks().getFirst();
+        } else {
+            throw new RuntimeException("No tracks found in playlist");//TODO proper exception
+        }
+
         Response shortPlaylistMessage = ShortPlaylistMessage.builder()
                 .query(context.getQuery().get())
                 .playlist(playlistLoaded)
@@ -34,22 +44,14 @@ public class PlaylistResultHandler implements LavalinkLoadResultHandler<Playlist
                                                 TrackQueueElement.listOf(
                                                         playlistLoaded.getTracks(),
                                                         context.getEvent().getInteraction().getUser()
-                                                )
+                                                ).stream()
+                                                        .filter(q -> !q.getTrack().equals(track))
+                                                        .toList()
                                         )))
                                 .and(Mono.justOrEmpty(event.getMessage()).flatMap(TimeoutUtils::clearActionBar))
                 )
                 .build()
                 .getMessage();
-
-        Track track;
-        if (playlistLoaded.getInfo().getSelectedTrack() != -1) {
-            track = playlistLoaded.getTracks().get(playlistLoaded.getInfo().getSelectedTrack());
-        }
-        else if(!playlistLoaded.getTracks().isEmpty()) {
-            track = playlistLoaded.getTracks().getFirst();
-        } else {
-            throw new RuntimeException("No tracks found in playlist");//TODO proper exception
-        }
 
 
 

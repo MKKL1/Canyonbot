@@ -3,6 +3,7 @@ package com.mkkl.canyonbot.music.commands;
 import com.mkkl.canyonbot.commands.BotCommand;
 import com.mkkl.canyonbot.commands.DefaultErrorHandler;
 import com.mkkl.canyonbot.commands.DiscordCommand;
+import com.mkkl.canyonbot.music.RandomSongProvider;
 import com.mkkl.canyonbot.music.exceptions.*;
 import com.mkkl.canyonbot.music.search.SourceRegistry;
 import com.mkkl.canyonbot.music.search.sources.SearchSource;
@@ -45,12 +46,16 @@ public class PlayCommand extends BotCommand {
     private final TrackResultHandler trackResultHandler;
     private final SearchResultHandler searchResultHandler;
     private final PlayerService playerService;
+    private final RandomSongProvider randomSongProvider;
 
     public PlayCommand(SearchService searchService,
                        SourceRegistry sourceRegistry,
                        DefaultErrorHandler errorHandler,
                        PlaylistResultHandler playlistResultHandler,
-                       TrackResultHandler trackResultHandler, SearchResultHandler searchResultHandler, PlayerService playerService) {
+                       TrackResultHandler trackResultHandler,
+                       SearchResultHandler searchResultHandler,
+                       PlayerService playerService,
+                       RandomSongProvider randomSongProvider) {
         super(ApplicationCommandRequest.builder()
                 .name("play")
                 .description("Play a song")
@@ -94,6 +99,7 @@ public class PlayCommand extends BotCommand {
         this.trackResultHandler = trackResultHandler;
         this.searchResultHandler = searchResultHandler;
         this.playerService = playerService;
+        this.randomSongProvider = randomSongProvider;
     }
 
     @Override
@@ -156,14 +162,43 @@ public class PlayCommand extends BotCommand {
                     };
                 })
                 .flatMap(resultHandlerResponse ->
-                        //TODO if something here fails, like for example joining channel doesn't work, track is still added to queue. Find a way to fix it
                         Mono.fromRunnable(() -> enqueueTrack(playerService, context, resultHandlerResponse.getTrack()))
-                        .then(joinChannel(playerService, context))
-                        .then(playerService.beginPlayback(context.guild.getId().asLong()))
-                        .then(context.event.createFollowup(resultHandlerResponse.getResponse().asFollowupSpec())
-                                .filter(ignore -> resultHandlerResponse.getResponse().getInteraction() != null)
-                                .flatMap(message -> resultHandlerResponse.getResponse().getInteraction().interaction(message))
-                        )
+                                .then(joinChannel(playerService, context))
+                                .then(playerService.beginPlayback(context.guild.getId().asLong()))
+                                .then(context.event.createFollowup(resultHandlerResponse.getResponse().asFollowupSpec())
+                                        .filter(ignore -> resultHandlerResponse.getResponse().getInteraction() != null)
+                                        .flatMap(message ->
+                                                resultHandlerResponse.getResponse().getInteraction().interaction(message)
+                                        )
+                                )
+                                // If joining the channel (or a subsequent operation) fails, remove the track.
+                                .onErrorResume(throwable -> {
+                                    // Remove or compensate for the already enqueued track.
+                                    return playerService.removeFirstFromQueue(context.guild.getId().asLong())
+                                            .then(Mono.error(new RuntimeException("Failed to join channel; track removed from queue", throwable)));
+                                })
+                                .then(Mono.defer(() -> {
+                                    if (Math.random() < randomSongProvider.getChance()) {
+                                        String surpriseLink = randomSongProvider.getRandomSong();
+                                        if (surpriseLink == null) return Mono.empty();
+                                        return searchService.search(context.guild, surpriseLink)
+                                                .flatMap(result -> switch (result) {
+                                                    case TrackLoaded trackLoaded ->
+                                                            Mono.fromRunnable(() -> enqueueTrack(playerService, context, trackLoaded.getTrack()));
+                                                    case PlaylistLoaded playlistLoaded ->
+                                                            Mono.fromRunnable(() -> enqueueTrack(playerService, context, playlistLoaded.getTracks().getFirst()));
+                                                    case SearchResult searchResult when !searchResult.getTracks().isEmpty() ->
+                                                            Mono.fromRunnable(() -> enqueueTrack(playerService, context, searchResult.getTracks().getFirst()));
+                                                    case null, default -> Mono.empty(); // no track to play
+
+                                                })
+                                                .onErrorResume(e -> {
+                                                    System.err.println("Surprise track failed to load: " + e.getMessage());
+                                                    return Mono.empty();
+                                                });
+                                    }
+                                    return Mono.empty(); // skip surprise
+                                }))
                 );
     }
 
